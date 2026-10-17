@@ -22,10 +22,14 @@ DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 SEED = 42
 N_SPLITS = 5
 
+# The real task's negatives are matched to the positives on disorder coverage and length, so the
+# comparison is restricted to the matched pairs (in_matched_set). Including unmatched positives
+# would reintroduce the imbalance the matching exists to remove.
 TASKS = {
-    "trivial": ("protective", "ordered"),       # expect ~0.98 AUC
-    "real": ("protective", "other_idp"),        # the hard one, expect ~0.7-0.8
+    "trivial": ("protective", "ordered"),       # expect ~0.98 AUC; the sanity check
+    "real": ("protective", "idp_matched"),      # the hard one: matched disordered negatives
 }
+MATCHED_ONLY = ("real",)
 MODELS = ("composition", "biophysical", "esm2")
 
 
@@ -142,7 +146,14 @@ def evaluate_all() -> list[Result]:
     df, emb = _load()
     results: list[Result] = []
     for task, (pos_label, neg_label) in TASKS.items():
-        sub = df[df["label"].isin([pos_label, neg_label])].reset_index(drop=True)
+        sub = df[df["label"].isin([pos_label, neg_label])]
+        if task in MATCHED_ONLY and "in_matched_set" in sub.columns:
+            flag = sub["in_matched_set"].astype(str).str.lower().isin(("true", "1"))
+            sub = sub[flag]
+        sub = sub.reset_index(drop=True)
+        if sub.empty or sub["label"].nunique() < 2:
+            print(f"[eval] task '{task}': skipped — needs both {pos_label} and {neg_label} rows.")
+            continue
         y = (sub["label"] == pos_label).astype(int).to_numpy()
         groups = sub["cluster_id"].to_numpy()
         print(f"\n[eval] task '{task}': {pos_label}({int(y.sum())}) vs "
