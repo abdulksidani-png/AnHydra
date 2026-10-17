@@ -4,6 +4,7 @@
 # Data + model artifacts (don't commit; regenerate from data.py)
 data/*.csv
 data/*.npy
+data/*.npz
 data/*.fasta
 data/*.clstr
 data/*.png
