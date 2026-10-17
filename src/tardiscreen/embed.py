@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import os
 import time
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
@@ -40,8 +41,13 @@ def _resolve_model(model_name: str = DEFAULT_MODEL) -> str:
     return model_name
 
 
+@lru_cache(maxsize=2)
 def _load_model(model_name: str):
-    """Load the tokenizer + model once (CPU). Returns (tokenizer, model, device, hidden_size)."""
+    """Load the tokenizer + model once (CPU). Returns (tokenizer, model, device, hidden_size).
+
+    Cached: the app calls embed_sequences() once per request, and reloading a 35M-param model each
+    time would add seconds of latency per score. The batch path loads it once either way.
+    """
     device = torch.device("cpu")
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModel.from_pretrained(model_name).to(device)

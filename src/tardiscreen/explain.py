@@ -37,27 +37,53 @@ def build_prompt(score: float, label: str, homolog: str | None,
     )
 
 
+API_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+TIMEOUT_S = float(os.environ.get("GEMINI_TIMEOUT_S", "12"))
+
+
 def explain(score: float, label: str, homolog: str | None,
             top_features: list[tuple[str, float]]) -> str:
-    """Call Gemini and return the readout. Falls back to a template string if the key is missing.
+    """Call Gemini and return the readout, falling back to a local template on any failure.
 
-    TODO (app owner): POST build_prompt(...) to the Gemini REST endpoint with GEMINI_API_KEY.
-    Handle 429 gracefully (free-tier limits) — fall back to `_offline_readout` rather than erroring
-    the whole request.
+    The demo must never 500 because an external API is down, rate-limited (free tier is easy to
+    exhaust), or slow — so every failure path returns `_offline_readout` instead of raising.
     """
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         return _offline_readout(score, label, top_features)
-    raise NotImplementedError("App owner: implement the Gemini REST call (prompt is ready above).")
+
+    prompt = build_prompt(score, label, homolog, top_features)
+    try:
+        import httpx
+
+        response = httpx.post(
+            API_URL.format(model=GEMINI_MODEL),
+            headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
+            json={
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {"temperature": 0.2, "maxOutputTokens": 300},
+            },
+            timeout=TIMEOUT_S,
+        )
+        response.raise_for_status()
+        parts = response.json()["candidates"][0]["content"]["parts"]
+        text = "".join(p.get("text", "") for p in parts).strip()
+        if not text:                      # safety filter or an empty candidate
+            raise ValueError("empty response from Gemini")
+        return text
+    except Exception as exc:              # noqa: BLE001 — the readout is a nice-to-have, never fatal
+        print(f"[explain] Gemini unavailable ({type(exc).__name__}: {exc}); using offline readout.")
+        return _offline_readout(score, label, top_features)
 
 
 def _offline_readout(score: float, label: str, top_features: list[tuple[str, float]]) -> str:
     """No-API fallback so the app still demos if Gemini is down or rate-limited."""
     drivers = ", ".join(name for name, _ in top_features[:3]) or "its overall composition"
     verdict = "worth prioritizing for wet-lab testing" if score >= 0.5 else "unlikely to be protective"
-    return (f"This sequence scores {score:.2f} for {label}-family character, driven mainly by "
-            f"{drivers}. On that basis it is {verdict}. Note: this is a family/triage signal, not a "
-            f"measured protection efficacy.")
+    # The score is always P(protective) — never describe it as the character of the negative class.
+    return (f"This sequence scores {score:.2f} for desiccation-protective family character "
+            f"(call: {label}), driven mainly by {drivers}. On that basis it is {verdict}. Note: this "
+            f"is a family/triage signal, not a measured protection efficacy.")
 
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@
 data/*.csv
 data/*.npy
 data/*.npz
+data/*.joblib
 data/*.fasta
 data/*.clstr
 data/*.png

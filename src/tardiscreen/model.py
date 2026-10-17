@@ -11,6 +11,7 @@ Train the production models (fit on all data) and save them for the app:
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
@@ -99,15 +100,26 @@ def train(dataset_csv: Path | None = None):
     return MODELS_PATH
 
 
-def predict(sequence: str) -> Prediction:
-    """Score a single sequence for the app. Loads the cached fitted models + embeds the sequence."""
+@lru_cache(maxsize=1)
+def _load_bundle(path_str: str, mtime: float) -> dict:
+    """Read models.joblib, cached. `mtime` is part of the key so retraining invalidates the cache."""
     import joblib
 
-    from .embed import embed_sequences
+    return joblib.load(path_str)
 
+
+def load_bundle() -> dict:
+    """The fitted bundle, read from disk once and reused across requests."""
     if not MODELS_PATH.exists():
         raise FileNotFoundError(f"{MODELS_PATH} not found — run `python -m tardiscreen.model` first.")
-    bundle = joblib.load(MODELS_PATH)
+    return _load_bundle(str(MODELS_PATH), MODELS_PATH.stat().st_mtime)
+
+
+def predict(sequence: str) -> Prediction:
+    """Score a single sequence for the app. Reuses the cached fitted models + embeds the sequence."""
+    from .embed import embed_sequences
+
+    bundle = load_bundle()
 
     vec = embed_sequences([sequence])[0].astype(np.float64)
     score = float(bundle["esm_clf"].predict_proba([vec])[0, 1])
@@ -132,7 +144,7 @@ def predict(sequence: str) -> Prediction:
 
 
 __all__ = ["Prediction", "featurize", "train_embedding_model", "train_feature_model", "train",
-           "predict", "FEATURE_NAMES"]
+           "predict", "load_bundle", "FEATURE_NAMES"]
 
 
 if __name__ == "__main__":
