@@ -12,4 +12,4 @@ Expected files after the pipeline runs:
 | `embeddings.npy` | `embed.py` | cached ESM-2 vectors |
 | `results_table.csv`, `*.png` | `evaluate.py` | the eval table + plots for the README |
 
-See `docs/DATA_PLAN.md` for sources and the cluster-split rule.
+See `docs/METHODS.md` for sources and the cluster-split rule.

@@ -96,6 +96,97 @@ Both facts bear directly on our evaluation:
   desiccation protection — which is precisely why the negatives had to be rebuilt from proteins that
   are themselves disordered.
 
+## How we interrogated our own result
+
+The real task first scored **0.987**, far above the 0.7–0.8 we had predicted. We treated that as a
+problem rather than a success and tested four explanations for it.
+
+| # | hypothesis | test | outcome |
+| --- | --- | --- | --- |
+| 1 | the cross-validation leaks | ESM-2 on shuffled labels | **ruled out** — 0.478 / 0.523, sitting on chance |
+| 2 | it is detecting sequence length | matched positives and negatives on length | **ruled out** — length-only AUC fell 0.770 → 0.514 while ESM-2 held at 0.990 |
+| 3 | it is detecting the source database | drew positives and negatives both from UniProt | **removed by rebuilding the dataset** |
+| 4 | it is detecting disorder itself | rebuilt the negatives, matched on disorder coverage | **this was the real problem** |
+
+**What hypothesis 4 found.** The original negatives came from DisProt, which annotates disordered
+*regions inside* proteins rather than whole disordered proteins. Their median disorder coverage was
+**0.15** against **0.88** for the positives — they were folded proteins with a floppy tail. The
+"hard" task was substantially re-measuring folded-versus-unfolded, which is what the *trivial* task
+already does.
+
+We rebuilt the negative set from UniProt proteins that are themselves genuinely disordered, matched
+one-to-one to the positives on **both** disorder coverage and length under the Austin caliper above.
+Final balance on the matched set:
+
+| matched variable | standardized mean difference | threshold |
+| --- | --- | --- |
+| disorder coverage | +0.015 | < 0.10 |
+| sequence length | +0.013 | < 0.10 |
+
+Both variables are uninformative in the matched set by construction, so neither can explain the
+result that follows.
+
+`src/tardiscreen/diagnose.py` runs checks 1, 2 and 4 on demand; `build_negatives.py`,
+`match_negatives.py` and `merge_dataset.py` are the rebuild.
+
+## The dataset
+
+| tier | what it is | n |
+| --- | --- | --- |
+| **protective** (positive) | LEA, dehydrin and other anhydrobiosis-associated disordered proteins from UniProt | 1,069 |
+| **idp_matched** (hard negative) | genuinely disordered UniProt proteins, matched 1:1 to a positive on disorder coverage and length | 529 matched pairs |
+| **ordered** (sanity negative) | folded globular proteins | the *trivial* task only |
+
+3,151 sequences in total carry embeddings. The **real** task uses only the matched subset, because
+that is the only subset where the matching guarantee holds.
+
+## Limitations, in full
+
+Each of these is a real constraint on what the numbers mean. They are listed because a result you
+cannot argue against is a result nobody can check.
+
+**The dataset contains no CAHS proteins.** Despite the project's origin, the 529 matched positives
+break down as LEA 308, dehydrin 198, other 21, hydrophilin 2 — and **zero CAHS**. Reviewed tardigrade
+entries are scarce in Swiss-Prot. So this is a *desiccation-protection-family* screener trained
+almost entirely on **plant** LEA and dehydrin proteins, motivated by tardigrade CAHS biology rather
+than trained on it. LEA and CAHS proteins are thought to protect through the same disorder-driven
+vitrification mechanism, which is why the framing holds — but the training data is plant-dominated.
+
+**The two held-out families are related.** Dehydrins are LEA group 2, so "train on LEA, test on
+dehydrin" leaves related proteins in training. That is almost certainly why BLAST still reaches
+0.925 on the dehydrin holdout against 0.739 on the LEA holdout. With only two families large enough
+to hold out (n ≥ 25), the generalization result rests on two non-independent rotations.
+
+**The cluster split is permissive.** See the Rost (1999) discussion above. We measured the
+consequence: BLAST found hits for **97% of queries** against training sequences in *different*
+clusters. **Our AUCs are therefore optimistic, not conservative.**
+
+**A species confound is untested.** The positives are plant and invertebrate proteins; the negatives
+come mostly from human, mouse, fly and yeast. Amino-acid usage differs between organisms, so part of
+the composition signal (0.897) may be taxonomic rather than functional. We did not test this.
+
+**The matched set covers mid-range disorder only.** Matching paired 529 of 835 annotated positives.
+The unmatched 306 skew highly disordered — matched positives sit at median 0.66 coverage against
+0.88 for the full set — because negatives that are both sufficiently disordered *and* short are rare.
+Results apply to the mid-disorder range, not to the most extreme protective proteins.
+
+**Coverage was measured with two different rulers.** The candidate negatives were measured through
+MobiDB and UniProt region annotations; the positives through UniProt regions alone.
+`match_negatives.py` prints a warning when the sources differ. Treat the matched coverage as
+approximate rather than exact.
+
+**No efficacy data exists.** We classify family membership and surface signatures. We do not predict
+how *much* a protein protects, and no dataset we know of would support that.
+
+**Labels are heterogeneous.** LEA, dehydrin and CAHS proteins protect by different mechanisms
+(gelation, vitrification, membrane support). One score flattens that, which is why the app shows a
+per-feature breakdown alongside it.
+
+**A name-filter bug affected the original pull.** The inherited protective-term filter matched `lea`
+as a bare substring, so it also caught "nuc**lea**r", "c**lea**vage", "re**lea**se" and
+"**lea**der", dropping ordinary disordered proteins as "protective-related". It is fixed and covered
+by a regression test, but the original DisProt negatives were drawn with it in place.
+
 ## Still unverified
 
 Stated here so nobody cites them as settled:

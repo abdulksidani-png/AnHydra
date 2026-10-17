@@ -33,7 +33,7 @@ GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
 PROMPT_TEMPLATE = """\
 You are explaining a protein-screening result to a biologist. Be concise, concrete, and honest.
 
-The TardiScreen model classifies whether a protein sequence belongs to the desiccation-protective
+The AnHydra model classifies whether a protein sequence belongs to the desiccation-protective
 families (CAHS / LEA / other anhydrobiosis IDPs). It does NOT predict how much a protein protects.
 
 Sequence summary:

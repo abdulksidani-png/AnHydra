@@ -1,6 +1,6 @@
 """Pull and label the training set.
 
-Owner: Data. See docs/DATA_PLAN.md for the tiers and the cluster-split rule — that doc is the spec
+Owner: Data. See docs/METHODS.md for the tiers and the cluster-split rule — that doc is the spec
 for this file.
 
 The goal of this module is one labeled table:
@@ -352,7 +352,7 @@ def cluster_sequences(records: list[Record], identity: float = 0.4) -> list[Reco
     """Clean, dedup, cluster (CD-HIT at `identity`, 40% by default), resolve label conflicts, and
     balance the negatives — returning records that all carry a non-empty, single-label cluster_id.
 
-    See docs/DATA_PLAN.md. Everything here is done in pandas; each step reports how many rows it drops.
+    See docs/METHODS.md. Everything here is done in pandas; each step reports how many rows it drops.
     """
     if not records:
         print("[cluster] no records to process.")

@@ -1,6 +1,6 @@
 """Cluster-split cross-validation and the two-tier results table — the AI-track centerpiece.
 
-Owner: Model. See docs/EVALS.md for the exact protocol. The single most important rule: split by
+Owner: Model. See docs/METHODS.md for the exact protocol. The single most important rule: split by
 CLUSTER, never by row. A random split leaks homologs across train/test and inflates AUC.
 
 Run from the repo root (after data + embed):

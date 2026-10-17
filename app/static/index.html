@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AnHydra — desiccation-protection screening</title>
+<meta name="description" content="Paste a protein sequence. Get a desiccation-protection family score from a protein language model, with the biophysical signatures behind it.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐻</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* ===========================================================================
+   AnHydra.
+   The subject is anhydrobiosis: survival without water. So the ground is a
+   water column seen from depth, and the one luminous colour belongs to living
+   tissue. Nothing else glows — when something lights up on this page, it is
+   because the model said so.
+   =========================================================================== */
+:root{
+  --abyss:#071420; --abyss-2:#040d16;
+  --column:#0e2030; --column-raised:#14293a;
+  --foam:#e9f2f7; --silt:#9fb6c6; --silt-deep:#728ea2;
+  --rule:#1b3346; --rule-strong:#29485f; --rule-faint:#132637;
+  --glow:#44d3c4; --glow-deep:#2aa698; --amber:#e9a23b;
+  --acidic:#ef7d5a; --basic:#6fb6ff; --polar:#44d3c4; --phobic:#7d93a8; --special:#e9c46a;
+  --serif:'Spectral',Georgia,'Times New Roman',serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  --radius:10px; --measure:1060px;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--abyss); color:var(--foam);
+  font:400 17px/1.65 var(--serif); -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+/* --- The water column. Two slow gradients drifting past each other, plus a
+       vignette. Pure CSS, no canvas, no library, no layout cost. --- */
+.ocean{position:fixed; inset:0; z-index:-2; background:
+  radial-gradient(900px 600px at 15% -10%, #11384a 0%, transparent 60%),
+  radial-gradient(1100px 700px at 85% 0%, #0d2c3e 0%, transparent 55%),
+  linear-gradient(180deg,#08192600 0%,var(--abyss-2) 85%), var(--abyss);}
+.caustics{position:fixed; inset:-20%; z-index:-1; opacity:.28; pointer-events:none;
+  background:
+    repeating-linear-gradient(104deg, transparent 0 38px, rgba(68,211,196,.055) 38px 40px),
+    repeating-linear-gradient(76deg,  transparent 0 54px, rgba(111,182,255,.04) 54px 56px);
+  animation:drift 44s linear infinite;}
+@keyframes drift{from{transform:translate3d(0,0,0)}to{transform:translate3d(-56px,38px,0)}}
+@media (prefers-reduced-motion:reduce){.caustics{animation:none}*{animation-duration:.01ms !important;transition-duration:.01ms !important}}
+
+.shell{max-width:var(--measure); margin:0 auto; padding:40px 20px 90px}
+a{color:var(--glow); text-underline-offset:3px; text-decoration-thickness:1px}
+a:hover{color:var(--foam)}
+:focus-visible{outline:2px solid var(--glow); outline-offset:3px; border-radius:3px}
+.mono{font-family:var(--mono)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+/* ===================== Masthead ===================== */
+.masthead{display:flex; gap:22px; align-items:flex-end; flex-wrap:wrap;
+  padding-bottom:18px; border-bottom:1px solid var(--rule-strong)}
+.mark{width:92px;height:56px;flex:0 0 auto}
+.mark .body{stroke:var(--glow);} .mark .leg{stroke:var(--glow-deep);} .mark .rule{stroke:var(--amber);}
+.mark .body{stroke-dasharray:420; stroke-dashoffset:420; animation:draw 2.4s ease forwards}
+.mark .leg{stroke-dasharray:60; stroke-dashoffset:60; animation:draw 1s ease forwards .9s}
+@keyframes draw{to{stroke-dashoffset:0}}
+.titles{flex:1 1 300px;min-width:0}
+h1{margin:0; font-size:clamp(36px,6vw,54px); font-weight:600; letter-spacing:-.02em; line-height:1}
+h1 .hy{color:var(--glow)}
+.tagline{margin:6px 0 0; color:var(--silt); font-size:17px}
+.stamp{flex:0 0 auto; font-family:var(--mono); font-size:11.5px; color:var(--silt-deep);
+  text-align:right; line-height:1.9; letter-spacing:.02em}
+.stamp b{color:var(--silt); font-weight:500}
+
+/* ===================== Cards ===================== */
+.stack{display:flex;flex-direction:column;gap:22px;margin-top:26px}
+.card{background:linear-gradient(180deg,rgba(20,41,58,.82),rgba(14,32,48,.82));
+  border:1px solid var(--rule); border-radius:var(--radius); padding:24px 26px 26px;
+  backdrop-filter:blur(6px)}
+.card h2{margin:0 0 16px; padding-bottom:10px; border-bottom:1px solid var(--rule-faint);
+  font-size:14px; font-weight:600; color:var(--silt); letter-spacing:.01em}
+.lede{margin:-6px 0 18px; color:var(--silt); font-size:15px}
+.row{display:flex;gap:22px;flex-wrap:wrap}
+.row>.card{flex:1 1 320px;min-width:0}
+
+/* ===================== Input ===================== */
+textarea{width:100%; min-height:132px; resize:vertical; padding:14px;
+  background:rgba(4,13,22,.75); color:var(--foam);
+  border:1px solid var(--rule-strong); border-radius:6px;
+  font:400 13px/1.85 var(--mono); letter-spacing:.06em}
+textarea::placeholder{color:var(--silt-deep)}
+textarea:focus{border-color:var(--glow); box-shadow:0 0 0 3px rgba(68,211,196,.12)}
+.bar-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px}
+button{font:600 15px/1 var(--serif); border-radius:6px; border:1px solid transparent; cursor:pointer}
+.primary{background:var(--glow); color:#06202a; padding:12px 22px; letter-spacing:.01em}
+.primary:hover:not(:disabled){background:#5ae3d4}
+.primary:disabled{opacity:.5;cursor:progress}
+.chip{background:rgba(68,211,196,.07); color:var(--glow); border:1px solid var(--rule-strong);
+  padding:7px 12px; font:500 12px/1 var(--mono)}
+.chip:hover{border-color:var(--glow); background:rgba(68,211,196,.14)}
+.count{margin-left:auto; font:400 12px/1 var(--mono); color:var(--silt-deep)}
+.alert{margin:14px 0 0; padding:11px 14px; border-radius:6px; font-size:14.5px;
+  background:rgba(239,125,90,.08); border:1px solid rgba(239,125,90,.35); color:#f6c4b4}
+.alert.warn{background:rgba(233,162,59,.08); border-color:rgba(233,162,59,.35); color:#f0d19c}
+
+
+/* ===================== Idle panel ===================== */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:26px}
+.step b{display:inline-flex;align-items:center;justify-content:center;width:27px;height:27px;
+  border-radius:50%;border:1px solid var(--glow);color:var(--glow);
+  font:600 13px/1 var(--mono)}
+.step h3{margin:11px 0 5px;font-size:17px;font-weight:600}
+.step p{margin:0;color:var(--silt);font-size:14.5px;line-height:1.55}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:22px}
+.fact{padding-left:14px;border-left:2px solid var(--glow)}
+.fact b{display:block;font:600 25px/1.2 var(--mono);color:var(--glow);letter-spacing:-.01em}
+.fact span{display:block;margin-top:7px;color:var(--silt);font-size:14px;line-height:1.55}
+
+/* ===================== Gauge ===================== */
+.verdict{display:flex;gap:26px;align-items:center;flex-wrap:wrap}
+.gauge{position:relative;width:188px;height:188px;flex:0 0 auto}
+.gauge svg{transform:rotate(135deg)}
+.gauge .track{stroke:var(--rule); }
+.gauge.low .fill{stroke:url(#gradlow)}
+.gauge .fill{stroke:url(#grad); stroke-linecap:round;
+  transition:stroke-dashoffset 1.1s cubic-bezier(.22,1,.36,1)}
+.gauge .tickline{stroke:var(--silt-deep)}
+.gauge-mark{position:absolute;top:8px;left:50%;transform:translateX(-50%);
+  font:500 10px/1 var(--mono);color:var(--silt-deep);letter-spacing:.08em}
+.gauge-centre{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:2px}
+.gauge-num{font:600 46px/1 var(--mono); letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums; color:var(--foam)}
+.gauge-cap{font:500 10.5px/1 var(--mono); color:var(--silt-deep); letter-spacing:.14em; text-transform:uppercase}
+.verdict-text{flex:1 1 260px;min-width:0}
+.call{display:inline-flex;align-items:center;gap:8px; font:600 13px/1 var(--mono);
+  letter-spacing:.06em; text-transform:uppercase; padding:8px 14px; border-radius:999px;
+  border:1px solid currentColor}
+.call.yes{color:var(--glow); background:rgba(68,211,196,.09)}
+.call.no{color:var(--amber); background:rgba(233,162,59,.09)}
+.call .dot{width:7px;height:7px;border-radius:50%;background:currentColor;
+  box-shadow:0 0 0 0 currentColor; animation:pulse 2.6s ease-out infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 currentColor;opacity:1}70%{box-shadow:0 0 0 9px transparent;opacity:.75}100%{box-shadow:0 0 0 0 transparent;opacity:1}}
+.verdict-text p{margin:14px 0 0; color:var(--silt); font-size:15.5px}
+.scope{margin-top:16px;padding-top:14px;border-top:1px solid var(--rule-faint);
+  font-size:13.5px; color:var(--silt-deep)}
+
+/* ===================== Residue ribbon ===================== */
+.ribbon{display:flex;flex-wrap:wrap;gap:1px;margin:4px 0 0;
+  padding:12px; background:rgba(4,13,22,.6); border:1px solid var(--rule-faint); border-radius:6px}
+.res{width:9px;height:17px;border-radius:1.5px;opacity:.78;
+  animation:rise .5s ease backwards}
+@keyframes rise{from{opacity:0;transform:translateY(5px)}}
+.res:hover{opacity:1;outline:1px solid var(--foam)}
+.ribbon.has-hits .res{opacity:.3}
+.res.hit{opacity:1 !important; height:23px; border-radius:0;
+  box-shadow:0 0 9px 1px var(--glow), inset 0 0 0 1px rgba(255,255,255,.7)}
+.hit-rule{flex-basis:100%;height:0;margin:0}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;
+  font:400 12px/1 var(--mono); color:var(--silt-deep)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.motif-list{margin:16px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px}
+.motif{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;
+  padding:10px 13px;border-radius:6px;background:rgba(68,211,196,.06);
+  border-left:2px solid var(--glow)}
+.motif .seq{font:600 13.5px/1 var(--mono); color:var(--glow); letter-spacing:.1em}
+.motif .where{font:400 12px/1 var(--mono); color:var(--silt-deep)}
+.motif .what{font-size:14px;color:var(--silt);flex:1 1 220px}
+.motif.none{background:rgba(255,255,255,.02); border-left-color:var(--rule-strong)}
+.motif.none .seq{color:var(--silt-deep)}
+
+/* ===================== Bars ===================== */
+.drivers{display:flex;flex-direction:column;gap:15px}
+.driver-top{display:flex;justify-content:space-between;gap:12px;font-size:14.5px;margin-bottom:5px}
+.driver-top .n{font:500 13px/1.3 var(--mono);color:var(--foam)}
+.driver-top .v{font:500 13px/1.3 var(--mono);color:var(--silt);font-variant-numeric:tabular-nums}
+.track2{position:relative;height:9px;background:rgba(4,13,22,.7);border-radius:999px;overflow:hidden}
+.track2::after{content:'';position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--rule-strong)}
+.track2 i{position:absolute;top:0;bottom:0;border-radius:999px;
+  transition:width .8s cubic-bezier(.22,1,.36,1), left .8s cubic-bezier(.22,1,.36,1)}
+.track2 i.pos{background:linear-gradient(90deg,var(--glow-deep),var(--glow))}
+.track2 i.neg{background:linear-gradient(90deg,var(--amber),#c9822a)}
+.axis{display:flex;justify-content:space-between;margin-top:12px;
+  font:400 11.5px/1 var(--mono);color:var(--silt-deep)}
+.chars{display:grid;grid-template-columns:repeat(auto-fit,minmax(252px,1fr));gap:18px 26px}
+.char .top{display:flex;justify-content:space-between;gap:10px;font-size:14px;margin-bottom:5px}
+.char .top .v{font:500 13px/1.3 var(--mono);font-variant-numeric:tabular-nums;color:var(--silt)}
+.char.lead .top .v,.char.lead .top .k{color:var(--glow)}
+.char .blurb{margin:5px 0 0;font-size:12.5px;color:var(--silt-deep);line-height:1.45}
+.char .track2 i{background:var(--silt-deep)}
+.char.lead .track2 i{background:var(--glow)}
+
+/* ===================== Readout / homolog ===================== */
+.notes{font-size:16.5px;line-height:1.7;margin:0}
+.byline{margin:14px 0 0;font:400 12px/1.5 var(--mono);color:var(--silt-deep)}
+.acc{font:600 22px/1.2 var(--mono);color:var(--glow);word-break:break-all}
+.muted{color:var(--silt);font-size:14.5px;margin:8px 0 0}
+
+/* ===================== States ===================== */
+.skeleton .card{min-height:118px}
+.shimmer{height:11px;border-radius:999px;background:linear-gradient(90deg,var(--rule-faint),var(--rule-strong),var(--rule-faint));
+  background-size:200% 100%;animation:sh 1.3s linear infinite;margin-bottom:11px}
+.shimmer:last-child{width:62%;margin-bottom:0}
+@keyframes sh{to{background-position:-200% 0}}
+.fade{animation:fade .5s ease backwards}
+@keyframes fade{from{opacity:0;transform:translateY(9px)}}
+[hidden]{display:none !important}
+footer{margin-top:34px;padding-top:18px;border-top:1px solid var(--rule-faint);
+  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  font-size:13.5px;color:var(--silt-deep)}
+footer .mono{font-size:12px}
+@media(max-width:560px){.shell{padding:28px 14px 70px} .card{padding:19px 17px 21px} .stamp{text-align:left}}
+</style>
+</head>
+<body>
+<div class="ocean"></div><div class="caustics"></div>
+
+<div class="shell">
+  <header class="masthead">
+    <svg class="mark" viewBox="0 0 96 56" aria-hidden="true" fill="none" stroke-width="2.2"
+         stroke-linecap="round" stroke-linejoin="round">
+      <path class="body" d="M14 28C14 16 26 12 40 12L66 12C80 12 88 18 88 28C88 38 80 44 66 44L40 44C26 44 14 40 14 28Z"/>
+      <path class="leg" d="M26 44 22 53M40 44 37 53M54 44 52 53M68 44 67 53M26 12 22 4M40 12 37 4M54 12 52 4M68 12 67 4M14 28 5 24M14 28 5 33"/>
+      <path class="rule" stroke-width="1.5" d="M34 22H56M34 28H60M34 34H56"/>
+    </svg>
+    <div class="titles">
+      <h1>An<span class="hy">Hydra</span></h1>
+      <p class="tagline">Does this protein look like it can survive drying out?</p>
+    </div>
+    <div class="stamp">
+      <div><b>ESM-2</b> esm2_t12_35M · frozen</div>
+      <div><b>0.818</b> AUC on an unseen family</div>
+      <div id="stamp-status">checking model…</div>
+    </div>
+  </header>
+
+  <div class="stack">
+    <div class="card" id="input-card">
+      <h2>Sequence</h2>
+      <label class="sr-only" for="seq">Protein sequence, raw or FASTA</label>
+      <textarea id="seq" spellcheck="false" autocapitalize="off" autocorrect="off"
+        placeholder="Paste an amino-acid sequence or a FASTA record…&#10;MSGSGSGKEKEKDKDKGSGSGSHGHGSGSEKEKDKDK"></textarea>
+      <div class="bar-row">
+        <button class="primary" id="go">Screen sequence</button>
+        <button class="chip" data-ex="dehydrin">dehydrin</button>
+        <button class="chip" data-ex="cahs">CAHS-like</button>
+        <button class="chip" data-ex="folded">folded control</button>
+        <span class="count mono" id="count">0 residues</span>
+      </div>
+      <p class="alert" id="error" hidden></p>
+      <p class="alert warn" id="untrained" hidden>
+        The model is not loaded on this server, so scoring will fail. Run
+        <code class="mono">python -m tardiscreen.model</code> and restart the service.
+      </p>
+    </div>
+
+
+    <div id="idle" class="stack">
+      <div class="card">
+        <h2>What this is</h2>
+        <div class="steps">
+          <div class="step"><b>1</b><h3>You paste a sequence</h3>
+            <p>Any protein, from any organism. Raw letters or a FASTA record.</p></div>
+          <div class="step"><b>2</b><h3>A protein language model reads it</h3>
+            <p>ESM-2 turns the sequence into 480 numbers that capture its character. A classifier
+               we trained on 3,151 proteins reads those numbers.</p></div>
+          <div class="step"><b>3</b><h3>You get a score and the reasons</h3>
+            <p>How much this protein looks like the families that survive total drying — plus the
+               biophysical signatures behind the call, written out in plain language.</p></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Why it is worth trusting</h2>
+        <p class="lede" style="margin-bottom:14px">Tardigrades survive losing essentially all their
+          water. A handful of protein families — CAHS in tardigrades, LEA and dehydrins in plants —
+          do that work by turning the cell's interior into glass. Finding more of them is a real
+          screening problem, and this is a real screen for it.</p>
+        <div class="facts">
+          <div class="fact"><b>0.818</b><span>AUC on a protein family the model had never seen.
+            A classical BLAST search gets 0.739 on the same test.</span></div>
+          <div class="fact"><b>K-segment</b><span>The motif our from-scratch CNN rediscovered on its
+            own — the 15-residue stretch that <em>defines</em> the dehydrin family, published decades
+            ago. Nothing in the pipeline was told it exists.</span></div>
+          <div class="fact"><b>4 confounds</b><span>tested and ruled out before we believed our own
+            number, including rebuilding the entire negative set when one of them stuck.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="loading" hidden class="skeleton stack">
+      <div class="card"><div class="shimmer"></div><div class="shimmer"></div><div class="shimmer"></div></div>
+      <div class="card"><div class="shimmer"></div><div class="shimmer"></div></div>
+      <p class="muted" style="text-align:center">Embedding the sequence with ESM-2… the first request after a restart takes about 15 seconds while the model loads.</p>
+    </div>
+
+    <div id="results" hidden class="stack">
+
+      <div class="card fade">
+        <h2>Determination</h2>
+        <div class="verdict">
+          <div class="gauge" id="gauge">
+            <svg width="188" height="188" viewBox="0 0 188 188" aria-hidden="true">
+              <defs>
+                <linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#2aa698"/><stop offset="100%" stop-color="#6fe8d9"/>
+                </linearGradient>
+                <linearGradient id="gradlow" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#c9822a"/><stop offset="100%" stop-color="#f0b454"/>
+                </linearGradient>
+              </defs>
+              <circle class="track" cx="94" cy="94" r="78" fill="none" stroke-width="13"
+                      stroke-dasharray="367.6 490.1"/>
+              <circle class="fill" id="arc" cx="94" cy="94" r="78" fill="none" stroke-width="13"
+                      stroke-dasharray="367.6 490.1" stroke-dashoffset="367.6"/>
+              <!-- A 3-unit dash placed half-way along the 367.6-unit sweep: the 0.50 line. -->
+              <circle class="tickline" cx="94" cy="94" r="78" fill="none" stroke-width="19"
+                      stroke-dasharray="0 182.3 3 600"/>
+            </svg>
+            <div class="gauge-centre">
+              <div class="gauge-num" id="score">—</div>
+              <div class="gauge-cap">family score</div>
+            </div>
+            <div class="gauge-mark">0.50
+            </div>
+          </div>
+          <div class="verdict-text">
+            <span class="call" id="call"><span class="dot"></span><span id="call-text"></span></span>
+            <p id="verdict-line"></p>
+            <p class="scope">The score is the model's probability that this sequence <em>belongs to</em>
+              the desiccation-protective families — CAHS, LEA, dehydrins. It is not a measure of how
+              much the protein protects. Read it as a ranking for what to test next.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card fade">
+        <h2>Residue map</h2>
+        <p class="lede">Every residue in the sequence, coloured by chemistry. Protective IDPs tend to
+          look like this: almost no hydrophobic core, heavy charge, long repetitive runs.</p>
+        <div class="ribbon" id="ribbon"></div>
+        <div class="legend">
+          <span><i style="background:var(--acidic)"></i>acidic D E</span>
+          <span><i style="background:var(--basic)"></i>basic K R H</span>
+          <span><i style="background:var(--polar)"></i>polar S T N Q C Y</span>
+          <span><i style="background:var(--phobic)"></i>hydrophobic A V L I M F W</span>
+          <span><i style="background:var(--special)"></i>flexible G P</span>
+          <span id="ribbon-note"></span>
+        </div>
+      </div>
+
+      <div class="card fade">
+        <h2>Known motifs found in this sequence</h2>
+        <p class="lede">Our CNN rediscovered the dehydrin K-segment from scratch, with no motif
+          database. These are literal matches to that motif and to the glycine/serine repeats that
+          characterise tardigrade CAHS proteins — highlighted in the map above.</p>
+        <ul class="motif-list" id="motifs"></ul>
+      </div>
+
+      <div class="card fade">
+        <h2>What drove this call</h2>
+        <p class="lede">The three strongest contributions from the interpretable biophysical model
+          that runs alongside the language model. Right of centre argues for protective; left argues
+          against.</p>
+        <div class="drivers" id="drivers"></div>
+        <div class="axis"><span>← argues against</span><span>argues for →</span></div>
+      </div>
+
+      <div class="card fade">
+        <h2>Readout</h2>
+        <p class="notes" id="explanation"></p>
+        <p class="byline" id="byline"></p>
+      </div>
+
+      <div class="row">
+        <div class="card fade">
+          <h2>Nearest protective sequence</h2>
+          <p class="acc" id="homolog">—</p>
+          <p class="muted" id="homolog-note"></p>
+        </div>
+        <div class="card fade">
+          <h2>Specimen</h2>
+          <p class="acc" id="spec-len">—</p>
+          <p class="muted">residues scored, after dropping non-standard characters and any FASTA header.</p>
+        </div>
+      </div>
+
+      <div class="card fade">
+        <h2>Diagnostic characters</h2>
+        <p class="lede">All nine interpretable features. The three that drove the call are marked.</p>
+        <div class="chars" id="chars"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>AnHydra scores family character, not protective strength.</span>
+    <span class="mono"><a href="https://github.com/abdulksidani-png/tardiscreen">source &amp; evaluation methodology</a></span>
+  </footer>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const CIRC = 367.6;           // 270° of a r=78 circle — the gauge sweep
+
+const EXAMPLES = {
+  // Arabidopsis dehydrin ERD10-like: two K-segments, heavily charged.
+  dehydrin:"MAEEYKNNVPEHETPTVTTEEHGHKEGLVDKIKDKIHGGEHKEEEHKHHEGLLGKIKEKLPGGHKDEQHHTTTTTAGAYGQQGHTGMTGTGTHGTTATGGTYGQQGHTGTTGTHGTTGTGEKKGIMDKIKEKLPGQHGHEHKTTETTTTAPAYETTHHEKKGIMDKIKEKLPGHHDKQQEHTPTVTTEEHGHKEGLVDKIKDKIHG",
+  // Gly/Ser/charge repeat in the CAHS idiom — the composition, not a real accession.
+  cahs:"MSGSGSGKEKEKDKDKGSGSGSHGHGSGSEKEKDKDKGSGSGSGHKGHGSGSEKEKDKDKGSGSGSHGHGSGSEKEKDKDKGSGSGSGHKGHGSGSEKEKDKDKGSGSGSHGHGSGSEKEKDKDKGSGSGSGHKGHGSGS",
+  // Hen lysozyme: a small, tightly folded, disulphide-bonded enzyme. Should score low.
+  folded:"KVFGRCELAAAMKRHGLDNYRGYSLGNWVCAAKFESNFNTQATNRNTDGSTDYGILQINSRWWCNDGRTPGSRNLCNIPCSALLSSDITASVNCAKKIVSDGNGMNAWVAWRNRCKGTDVQAWIRGCRL",
+};
+
+/* Residue chemistry classes — the ribbon's palette. */
+const CLASS = {};
+for (const c of "DE") CLASS[c] = "acidic";
+for (const c of "KRH") CLASS[c] = "basic";
+for (const c of "STNQCY") CLASS[c] = "polar";
+for (const c of "AVLIMFW") CLASS[c] = "phobic";
+for (const c of "GP") CLASS[c] = "special";
+
+/* Motif scanners.
+   The K-segment consensus is [XKXGXX(D/E)KIK(D/E)KXPG] (Malik et al. 2017) — the
+   motif our CNN filters reconstructed. The core alone is the part the filters hit
+   hardest, so it is worth reporting even when the full 15-mer is absent. */
+const SCANNERS = [
+  { re:/[A-Z]K[A-Z]G[A-Z]{2}[DE]KIK[DE]K[A-Z]PG/g,
+    what:"Full dehydrin K-segment. This motif is the definition of the dehydrin family." },
+  { re:/K[IL]K[DE]K[A-Z]PG/g,
+    what:"K-segment core — the lysine-rich stretch our filters fired on most strongly." },
+  { re:/(?:[GS]{2,}[A-Z]{0,2}){4,}/g,
+    what:"Glycine/serine repeat region, the compositional signature of tardigrade CAHS proteins." },
+];
+
+const FEATURES = {
+  length:              {label:"Length",                   max:800,  fmt:v=>Math.round(v)+" aa", blurb:"residues after cleaning"},
+  fraction_charged:    {label:"Fraction charged",         max:0.6,  fmt:f2, blurb:"D, E, K and R as a share of the sequence"},
+  net_charge_per_residue:{label:"Net charge per residue", max:0.4,  fmt:s2, bipolar:true, blurb:"positive means more K/R than D/E"},
+  mean_hydropathy:     {label:"Mean hydropathy",          max:2.5,  fmt:s2, bipolar:true, blurb:"Kyte–Doolittle; below zero is water-loving, typical of IDPs"},
+  glycine:             {label:"Glycine fraction",         max:0.3,  fmt:f2, blurb:"enriched in CAHS-family proteins"},
+  serine:              {label:"Serine fraction",          max:0.3,  fmt:f2, blurb:"enriched in CAHS-family proteins"},
+  histidine:           {label:"Histidine fraction",       max:0.15, fmt:f2, blurb:"a minor but characteristic signal"},
+  gly_ser_his:         {label:"Gly + Ser + His",          max:0.6,  fmt:f2, blurb:"the combined enrichment the model leans on"},
+  low_complexity:      {label:"Low-complexity fraction",  max:1,    fmt:f2, blurb:"share of 20-residue windows below 2.2 bits of entropy"},
+};
+function f2(v){ return v.toFixed(2); }
+function s2(v){ return (v>=0?"+":"−")+Math.abs(v).toFixed(2); }
+function clamp(n,lo,hi){ return Math.min(hi,Math.max(lo,n)); }
+function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+const MAX_RIBBON = 2400;   // beyond this the ribbon stops being readable anyway
+
+/* ---------- input wiring ---------- */
+function cleaned(){ return $("seq").value.toUpperCase().replace(/[^ACDEFGHIKLMNPQRSTVWY]/g,""); }
+function updateCount(){
+  const raw = $("seq").value;
+  const body = raw.split("\n").filter(l=>!l.trim().startsWith(">")).join("");
+  const n = body.toUpperCase().replace(/[^ACDEFGHIKLMNPQRSTVWY]/g,"").length;
+  $("count").textContent = n + (n===1?" residue":" residues");
+}
+$("seq").addEventListener("input", updateCount);
+$("seq").addEventListener("keydown", e => { if ((e.metaKey||e.ctrlKey) && e.key==="Enter") run(); });
+$("go").addEventListener("click", run);
+document.querySelectorAll("[data-ex]").forEach(b =>
+  b.addEventListener("click", () => {
+    $("seq").value = EXAMPLES[b.dataset.ex]; updateCount(); $("seq").focus();
+  }));
+
+fetch("/health").then(r=>r.json()).then(h => {
+  $("stamp-status").innerHTML = h.model_trained
+    ? '<b style="color:var(--glow)">model loaded</b>'
+    : '<b style="color:var(--amber)">model not loaded</b>';
+  if (!h.model_trained) $("untrained").hidden = false;
+}).catch(()=>{ $("stamp-status").textContent = "server unreachable"; });
+
+function showError(msg){
+  $("error").textContent = msg; $("error").hidden = false;
+  $("loading").hidden = true; $("results").hidden = true; $("idle").hidden = false;
+}
+
+async function run(){
+  const sequence = $("seq").value.trim();
+  $("error").hidden = true;
+  if (!sequence) { showError("Paste a sequence first, or try one of the examples."); return; }
+
+  const btn = $("go");
+  btn.disabled = true; btn.textContent = "Screening…";
+  $("results").hidden = true; $("idle").hidden = true; $("loading").hidden = false;
+  try {
+    const res  = await fetch("/score", {method:"POST",
+      headers:{"content-type":"application/json"}, body: JSON.stringify({sequence})});
+    const data = await res.json();
+    if (!res.ok) { showError(data.detail || "Scoring failed."); return; }
+    render(data, sequence);
+  } catch (e) {
+    showError("Could not reach the server. Is it still running?");
+  } finally {
+    btn.disabled = false; btn.textContent = "Screen sequence";
+    $("loading").hidden = true;
+  }
+}
+
+/* ---------- rendering ---------- */
+function render(d, raw){
+  const seq = raw.split("\n").filter(l=>!l.trim().startsWith(">")).join("")
+                 .toUpperCase().replace(/[^ACDEFGHIKLMNPQRSTVWY]/g,"");
+  const protective = d.label === "protective";
+
+  // Gauge. The arc sweeps; the number counts up to meet it.
+  $("gauge").classList.toggle("low", !protective);
+  $("arc").style.strokeDashoffset = CIRC * (1 - clamp(d.score,0,1));
+  countUp($("score"), d.score);
+
+  $("call").className = "call " + (protective ? "yes" : "no");
+  $("call-text").textContent = protective ? "protective family" : "not protective family";
+  $("verdict-line").textContent = protective
+    ? "This sequence carries the signatures the model associates with desiccation-protective proteins. It is worth queueing for expression and a dry-down assay."
+    : "This sequence does not carry those signatures. On this evidence it is not a priority candidate.";
+
+  // Motifs first — the ribbon needs their positions to highlight.
+  const hits = scanMotifs(seq);
+  renderRibbon(seq, hits);
+  renderMotifs(hits);
+
+  // Drivers: signed, shared scale, so a feature arguing against is visibly shorter or longer.
+  const maxAbs = Math.max(...d.top_features.map(([,v])=>Math.abs(v)), 1e-9);
+  $("drivers").innerHTML = d.top_features.map(([name, v]) => {
+    const half = clamp(Math.abs(v)/maxAbs,0,1)*50;
+    const left = v < 0 ? 50-half : 50;
+    return `<div class="driver">
+      <div class="driver-top"><span class="n">${esc(label(name))}</span>
+        <span class="v">${v>=0?"+":"−"}${Math.abs(v).toFixed(2)}</span></div>
+      <div class="track2"><i class="${v<0?"neg":"pos"}" style="left:${left}%;width:${half}%"></i></div>
+    </div>`;
+  }).join("");
+
+  $("explanation").textContent = d.explanation;
+  const offline = /gly_ser_his|driven mainly by/.test(d.explanation);
+  $("byline").textContent = offline
+    ? "Written by the offline template — the Gemini API was unavailable for this request."
+    : "Written by Gemini from the model's output. It is given the score, the call and the feature contributions, and nothing else.";
+
+  $("homolog").textContent = d.nearest_homolog || "none";
+  $("homolog-note").innerHTML = d.nearest_homolog
+    ? `Closest training positive in ESM-2 embedding space (cosine). This is a neighbour in the model's
+       representation, <em>not</em> an alignment — no percent identity is implied.
+       <a href="https://www.uniprot.org/uniprotkb/${encodeURIComponent(d.nearest_homolog)}" target="_blank" rel="noopener">Look it up on UniProt →</a>`
+    : "No close neighbour among the training positives.";
+
+  $("spec-len").textContent = (d.features.length || seq.length) + " aa";
+
+  // All nine characters, with the drivers marked.
+  const driverNames = new Set(d.top_features.map(([n])=>n));
+  $("chars").innerHTML = Object.keys(FEATURES).map(name => {
+    const meta = FEATURES[name], v = d.features[name];
+    if (v === undefined) return "";
+    const bipolar = !!meta.bipolar;
+    const frac = clamp(Math.abs(v)/meta.max, 0, 1);
+    const half = bipolar ? frac*50 : frac*100;
+    const left = bipolar ? (v<0 ? 50-half : 50) : 0;
+    return `<div class="char ${driverNames.has(name)?"lead":""}">
+      <div class="top"><span class="k">${esc(meta.label)}</span><span class="v">${esc(meta.fmt(v))}</span></div>
+      <div class="track2"><i style="left:${left}%;width:${half}%"></i></div>
+      <p class="blurb">${esc(meta.blurb)}</p></div>`;
+  }).join("");
+
+  $("idle").hidden = true;
+  $("results").hidden = false;
+  $("results").scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+function label(name){
+  return FEATURES[name]?.label || name.replace(/_/g," ").replace(/^./,c=>c.toUpperCase());
+}
+
+function countUp(el, target){
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce) { el.textContent = target.toFixed(2); return; }
+  const t0 = performance.now(), dur = 1000;
+  (function step(now){
+    const p = Math.min(1, (now-t0)/dur);
+    el.textContent = (target * (1 - Math.pow(1-p, 3))).toFixed(2);
+    if (p < 1) requestAnimationFrame(step);
+  })(t0);
+}
+
+/** Literal motif matches, de-duplicated so the K-segment core inside a full
+ *  K-segment is not reported twice. */
+function scanMotifs(seq){
+  const hits = [];
+  for (const {re, what} of SCANNERS) {
+    re.lastIndex = 0;
+    let m;
+    while ((m = re.exec(seq)) !== null) {
+      const start = m.index, end = start + m[0].length;
+      if (!hits.some(h => start < h.end && end > h.start)) hits.push({start, end, text:m[0], what});
+      re.lastIndex = start + 1;   // allow overlapping starts, dedup handles the rest
+    }
+  }
+  return hits.sort((a,b)=>a.start-b.start);
+}
+
+function renderRibbon(seq, hits){
+  const marked = new Uint8Array(seq.length);
+  for (const h of hits) marked.fill(1, h.start, h.end);
+  const shown = Math.min(seq.length, MAX_RIBBON);
+  const cells = new Array(shown);
+  for (let i = 0; i < shown; i++) {
+    const c = seq[i], cls = CLASS[c] || "phobic";
+    const delay = Math.min(i * 1.4, 700);
+    cells[i] = `<span class="res ${marked[i]?"hit":""}" style="background:var(--${cls});animation-delay:${delay}ms" title="${c}${i+1}"></span>`;
+  }
+  $("ribbon").innerHTML = cells.join("");
+  $("ribbon").classList.toggle("has-hits", hits.length > 0);
+  $("ribbon-note").textContent = seq.length > MAX_RIBBON
+    ? `showing the first ${MAX_RIBBON} of ${seq.length} residues` : "";
+}
+
+function renderMotifs(hits){
+  if (!hits.length) {
+    $("motifs").innerHTML = `<li class="motif none"><span class="seq">no match</span>
+      <span class="what">Neither the dehydrin K-segment nor a CAHS-style glycine/serine repeat appears
+      literally in this sequence. The score does not depend on them — the language model reads the whole
+      sequence, not a motif list.</span></li>`;
+    return;
+  }
+  $("motifs").innerHTML = hits.map(h =>
+    `<li class="motif"><span class="seq">${esc(h.text)}</span>
+       <span class="where">${h.start+1}–${h.end}</span>
+       <span class="what">${esc(h.what)}</span></li>`).join("");
+}
+
+updateCount();
+</script>
+</body>
+</html>

@@ -165,3 +165,14 @@ def test_training_and_prediction_round_trip(tmp_path):
 def test_family_holdout_excludes_related_training_rows():
     from tardiscreen.family_holdout import _holdout_train_indices
     assert _holdout_train_indices(["same", "other", "same", "negative"], [0]).tolist() == [1, 3]
+
+
+def test_page_is_served_from_disk():
+    """The page moved out of main.py into a file; a bad path would serve an empty body."""
+    from app.main import PAGE_PATH
+
+    page = PAGE_PATH.read_text(encoding="utf-8")
+    assert PAGE_PATH.name == "index.html"
+    # The page is useless if it cannot reach the API or render the fields the API returns.
+    for needed in ('fetch("/score"', 'fetch("/health")', "top_features", "nearest_homolog"):
+        assert needed in page, needed
