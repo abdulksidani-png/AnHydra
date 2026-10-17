@@ -239,5 +239,45 @@ def main():
               "\n     negatives to the positives' distribution instead of hard-thresholding.")
 
 
+def report():
+    """Split the written coverage file by whether the entry carries ANY disorder annotation.
+
+    A fraction of 0.0 means two different things: annotated as ordered, or never annotated at all.
+    UniProt's MobiDB-lite coverage is incomplete, so conflating them would let a later match on
+    coverage become a match on annotation completeness — a fresh artifact replacing the old one.
+    Reads the local CSV only; no network.
+    """
+    import numpy as np
+    import pandas as pd
+
+    if not OUT_PATH.exists():
+        raise FileNotFoundError(f"{OUT_PATH} not found — run `python -m tardiscreen.coverage` first.")
+    cov = pd.read_csv(OUT_PATH)
+    if "label" not in cov.columns:
+        print("No label column — rerun `python -m tardiscreen.coverage` to include the positives.")
+        return
+
+    print("=" * 78)
+    print("ANNOTATED vs UNANNOTATED — is a 0.00 coverage real, or just missing data?")
+    print("=" * 78)
+    for label, grp in cov.groupby("label"):
+        unann = grp[grp["n_regions"] == 0]
+        ann = grp[grp["n_regions"] > 0]
+        print(f"\n  {label}: {len(grp)} total")
+        print(f"    no disorder annotation at all : {len(unann):>5}  ({len(unann) / len(grp):.0%})")
+        print(f"    has >=1 annotated region      : {len(ann):>5}  ({len(ann) / len(grp):.0%})")
+        if len(ann):
+            f = ann["disorder_fraction"].to_numpy()
+            q = np.percentile(f, [25, 50, 75])
+            print(f"    among ANNOTATED only: median {q[1]:.2f} (IQR {q[0]:.2f}-{q[2]:.2f})  "
+                  + "  ".join(f">={t:.1f}: {float((f >= t).mean()):.0%}" for t in (0.5, 0.7, 0.9)))
+
+    print("\n  Read: if the unannotated share differs a lot between the classes, coverage is partly"
+          "\n  measuring annotation effort, not biology. In that case build the matched sets from"
+          "\n  ANNOTATED entries only, in both classes, so 0.00 always means 'measured as ordered'.")
+
+
 if __name__ == "__main__":
-    main()
+    import sys
+
+    report() if "--report" in sys.argv else main()
