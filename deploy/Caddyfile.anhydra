@@ -1,0 +1,5 @@
+# Install alongside any unrelated site blocks already in /etc/caddy/Caddyfile.
+anhydra.work, www.anhydra.work, http://64.177.42.245 {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:8000
+}

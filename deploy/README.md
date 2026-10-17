@@ -1,5 +1,24 @@
 # TardiScreen deployment
 
+## AnHydra domain configuration
+
+The current app serves its page from `app/static/index.html` through FastAPI.
+Proxy all requests to `127.0.0.1:8000`; no separate frontend build or static
+web root is required. The retired `frontend/dist/` build should not be deployed.
+
+Back up `/etc/caddy/Caddyfile`, then incorporate `deploy/Caddyfile.anhydra`,
+preserving unrelated sites and replacing the old IP-only block. Confirm the
+DNS records for `anhydra.work` and `www.anhydra.work` point to this server
+before applying the configuration. Validate with
+`caddy validate --config /etc/caddy/Caddyfile` before `systemctl reload caddy`.
+Caddy manages domain HTTPS automatically. The IP address remains available
+over HTTP. Restore the backup if validation or serving fails.
+
+After updating the server checkout, restart `tardiscreen` and verify `/`,
+`/health`, and a real `/score` request. Run `bash scripts/check_site.sh` for
+the demo checks, and verify HTTP-to-HTTPS redirection for both hostnames.
+These are deployment instructions, not confirmation of a live server update.
+
 Replace every `@@...@@` token with the verified absolute checkout path and
 registered domain. The service uses a dynamic non-root account and a read-only
 mount of the checkout at `/srv/tardiscreen`. It has its own writable Hugging Face
@@ -25,7 +44,7 @@ starting the app; restart the service after changing that environment file.
 - Pending: data owner supplies the model, Gemini key and live API verification,
   domain/DNS/HTTPS, successful scoring, and phone check over cellular data.
 
-The repository status document still says the model exists; the direct server
+The earlier direct server
 check found it missing. No data pipeline commands were run during deployment.
 
 ## Before installation
@@ -38,7 +57,7 @@ check found it missing. No data pipeline commands were run during deployment.
   Optionally set `GEMINI_MODEL=gemini-3.5-flash-lite`. Restrict `.env` to mode 600,
   owned by root so systemd can load it without exposing it to other accounts.
   Never print or commit its contents.
-- In GoDaddy DNS, set the chosen hostname's A record to `64.177.42.245`.
+- At your DNS provider, set the chosen hostname's A record to `64.177.42.245`.
   Remove conflicting records for that hostname, including stale AAAA records.
   Only add a www alias if it will also be included in the Caddy configuration.
 - Confirm inbound TCP 80 and 443 are allowed by the Vultr firewall and host
