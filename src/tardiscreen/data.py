@@ -160,10 +160,12 @@ def fetch_positives() -> list[Record]:
     the honest-provenance share is easy to report. Evidence comes from UniProt's `protein_existence`.
     """
     name_q = " OR ".join(f"protein_name:{t}" for t in POSITIVE_NAME_TERMS)
-    # reviewed:true = Swiss-Prot (manually curated). A free-text/keyword net over all of UniProtKB
-    # returns ~59k mostly-unreviewed, computationally-annotated hits — training on those just
-    # reproduces UniProt's own annotation pipeline. Curated entries are the honest positive set.
-    query = f"(({name_q}) OR keyword:anhydrobiosis) AND reviewed:true"
+    # A free-text/keyword net over all of UniProtKB returns ~59k mostly computationally-annotated
+    # hits (existence 3=homology / 4=predicted) — training on those just reproduces UniProt's own
+    # pipeline. Keep curated Swiss-Prot (reviewed:true) OR entries with real experimental support
+    # (existence:1 = evidence at protein level, existence:2 = transcript level). reviewed:true alone
+    # gave only ~102; this adds experimentally-backed TrEMBL without the predicted-homology noise.
+    query = f"(({name_q}) OR keyword:anhydrobiosis) AND (reviewed:true OR existence:1 OR existence:2)"
     rows = _uniprot_fetch(query)
     records = [_row_to_record(r, "protective") for r in rows]
     records = [r for r in records if r.sequence_id and r.sequence]
