@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-flash-latest")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
 PROMPT_TEMPLATE = """\
 You are explaining a protein-screening result to a biologist. Be concise, concrete, and honest.
@@ -25,12 +25,19 @@ families (CAHS / LEA / other anhydrobiosis IDPs). It does NOT predict how much a
 Sequence summary:
 - Protection-family score: {score:.2f} (0 = unlike protective families, 1 = very like them)
 - Family call: {label}
-- Nearest known protective homolog: {homolog}
-- Biophysical signatures (feature: value):
+- Nearest training-set protective sequence by embedding similarity: {homolog}
+- Auxiliary biophysical model contributions (feature: signed contribution):
 {feature_lines}
 
-Write 2-3 sentences explaining which signatures drove this score and what a lab should do next
-(e.g. "prioritize for wet-lab testing" or "unlikely to be worth expressing"). Do not overclaim.
+Contributions are standardized feature values times logistic coefficients, NOT raw measurements
+or residue fractions. Positive contributions support the auxiliary protective-family call;
+negative contributions oppose it. They explain a separate biophysical model, not the ESM-2 score.
+Embedding proximity is not evidence of homology. An absent nearest sequence does not establish
+novelty or the absence of homologs in public databases.
+
+Write 2-3 sentences describing the score, the supporting or opposing auxiliary signatures, and a
+reasonable next lab step. Always state that this is a family/triage signal, not measured protection
+efficacy. Do not infer raw feature values, novelty, or experimental protection.
 """
 
 
@@ -72,12 +79,14 @@ def explain(score: float, label: str, homolog: str | None,
         )
         response.raise_for_status()
         parts = response.json()["candidates"][0]["content"]["parts"]
-        text = "".join(p.get("text", "") for p in parts).strip()
+        text = "".join(p.get("text", "") for p in parts if not p.get("thought")).strip()
         if not text:                      # safety filter or an empty candidate
             raise ValueError("empty response from Gemini")
         return text
     except Exception as exc:              # noqa: BLE001 — the readout is a nice-to-have, never fatal
-        print(f"[explain] Gemini unavailable ({type(exc).__name__}: {exc}); using offline readout.")
+        # Do not log exception text: upstream responses may contain request details or credentials.
+        status = getattr(getattr(exc, "response", None), "status_code", None)
+        print(f"[explain] Gemini unavailable ({type(exc).__name__}, HTTP {status}); using offline readout.")
         return _offline_readout(score, label, top_features)
 
 

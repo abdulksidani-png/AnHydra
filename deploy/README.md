@@ -35,7 +35,7 @@ check found it missing. No data pipeline commands were run during deployment.
 - Confirm the checkout contains `data/models.joblib`, `.venv/bin/uvicorn`, and
   an installed `tardiscreen` package with its ML dependencies.
 - Put `GEMINI_API_KEY` in the checkout's `.env` using a server-side editor.
-  Optionally set `GEMINI_MODEL=gemini-flash-latest`. Restrict `.env` to mode 600,
+  Optionally set `GEMINI_MODEL=gemini-3.5-flash-lite`. Restrict `.env` to mode 600,
   owned by root so systemd can load it without exposing it to other accounts.
   Never print or commit its contents.
 - In GoDaddy DNS, set the chosen hostname's A record to `64.177.42.245`.
