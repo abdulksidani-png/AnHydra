@@ -17,7 +17,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from tardiscreen.explain import explain
-from tardiscreen.features import clean_sequence, compute_features
+from tardiscreen.features import AA, clean_sequence, compute_features
 from tardiscreen.model import MODELS_PATH, predict
 
 MIN_LENGTH = 20          # below this, composition/disorder signals are meaningless
@@ -45,7 +45,13 @@ def parse_sequence(raw: str) -> str:
     People paste FASTA straight out of UniProt, so drop '>' header lines rather than treating the
     description as residues.
     """
-    body = "\n".join(line for line in raw.splitlines() if not line.startswith(">"))
+    lines = [line.strip() for line in raw.splitlines() if line.strip()]
+    headers = [i for i, line in enumerate(lines) if line.startswith(">")]
+    if len(headers) > 1 or (headers and headers[0] != 0):
+        raise HTTPException(status_code=400, detail="Submit one sequence or one FASTA record at a time.")
+    body = "".join("".join(line.split()) for line in lines if not line.startswith(">"))
+    if set(body.upper()) - set(AA):
+        raise HTTPException(status_code=400, detail="Use only the 20 standard amino-acid letters.")
     seq = clean_sequence(body)
     if len(seq) < MIN_LENGTH:
         raise HTTPException(

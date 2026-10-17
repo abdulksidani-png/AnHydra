@@ -14,6 +14,7 @@ Override the model without editing code:
 from __future__ import annotations
 
 import os
+import hashlib
 import time
 from functools import lru_cache
 from pathlib import Path
@@ -34,11 +35,9 @@ CHECKPOINT_EVERY = 256          # re-save the cache every this many newly embedd
 CACHE = DATA_DIR / "embeddings.npz"
 
 
-def _resolve_model(model_name: str = DEFAULT_MODEL) -> str:
-    """An explicit non-default arg wins; otherwise honor TARDISCREEN_EMBED_MODEL, else the default."""
-    if model_name == DEFAULT_MODEL:
-        return os.environ.get("TARDISCREEN_EMBED_MODEL", DEFAULT_MODEL)
-    return model_name
+def _resolve_model(model_name: str | None = None) -> str:
+    """An explicit model wins; otherwise honor the environment, then the default."""
+    return model_name if model_name is not None else os.environ.get("TARDISCREEN_EMBED_MODEL", DEFAULT_MODEL)
 
 
 @lru_cache(maxsize=2)
@@ -75,7 +74,7 @@ def _embed_with(bundle, sequences: list[str], desc: str) -> np.ndarray:
     return np.vstack(chunks).astype(np.float32)
 
 
-def embed_sequences(sequences: list[str], model_name: str = DEFAULT_MODEL) -> np.ndarray:
+def embed_sequences(sequences: list[str], model_name: str | None = None) -> np.ndarray:
     """Return an (N, D) float32 array of mean-pooled ESM-2 embeddings (frozen, CPU).
 
     Sequences are batched and truncated to MAX_LENGTH; the last hidden state is mean-pooled over the
@@ -86,17 +85,23 @@ def embed_sequences(sequences: list[str], model_name: str = DEFAULT_MODEL) -> np
                        f"embedding ({model_name.split('/')[-1]})")
 
 
-def _load_cache(model_name: str) -> dict[str, np.ndarray]:
+def _load_cache(model_name: str, sequences: dict[str, str] | None = None) -> dict[str, np.ndarray]:
     """Return {sequence_id: vector} from the cache, but only if it was built with this model."""
     if not CACHE.exists():
         return {}
     z = np.load(CACHE, allow_pickle=False)
     cached_model = str(z["model"]) if "model" in z else ""
-    if cached_model and cached_model != model_name:
+    if cached_model != model_name:
         print(f"[embed] cache was built with {cached_model}, not {model_name} — recomputing all.")
         return {}
     ids = z["ids"].astype(str)
     X = z["X"]
+    if sequences is not None:
+        if "sequence_hashes" not in z:
+            return {}  # legacy caches cannot prove that the sequence for an ID is unchanged
+        hashes = z["sequence_hashes"].astype(str)
+        return {sid: X[i] for i, sid in enumerate(ids)
+                if sid in sequences and hashes[i] == _sequence_hash(sequences[sid])}
     return {sid: X[i] for i, sid in enumerate(ids)}
 
 
@@ -124,12 +129,20 @@ def _acceptance_checks(n_rows: int, ids: list[str], X: np.ndarray, dataset_ids: 
     return ok
 
 
-def _save(cached: dict[str, np.ndarray], model_name: str) -> np.ndarray:
+def _sequence_hash(sequence: str) -> str:
+    return hashlib.sha256(sequence.encode("utf-8")).hexdigest()
+
+
+def _save(cached: dict[str, np.ndarray], model_name: str,
+          sequences: dict[str, str] | None = None) -> np.ndarray:
     """Write the cache to embeddings.npz. Order doesn't matter — downstream aligns by id."""
     ids_list = list(cached.keys())
     X = (np.vstack([cached[s] for s in ids_list]).astype(np.float32)
          if ids_list else np.zeros((0, 0), dtype=np.float32))
-    np.savez(CACHE, ids=np.array(ids_list, dtype=object).astype(str), X=X, model=np.array(model_name))
+    CACHE.parent.mkdir(parents=True, exist_ok=True)
+    metadata = ({"sequence_hashes": np.array([_sequence_hash(sequences[s]) for s in ids_list])}
+                if sequences is not None else {})
+    np.savez(CACHE, ids=np.array(ids_list, dtype=object).astype(str), X=X, model=np.array(model_name), **metadata)
     return X
 
 
@@ -150,13 +163,15 @@ def build(dataset_csv: Path | None = None):
 
     df = pd.read_csv(dataset_csv, dtype=str).fillna("")
     ids = df["sequence_id"].tolist()
+    if len(set(ids)) != len(ids) or any(not sid for sid in ids):
+        raise ValueError("Dataset sequence IDs must be unique and non-empty.")
     id_to_seq = dict(zip(ids, df["sequence"].tolist()))
     n_rows = len(ids)
     if not ids:
         print("[embed] dataset is empty — nothing to embed."); return CACHE
 
     model_name = _resolve_model()
-    cached = _load_cache(model_name)
+    cached = _load_cache(model_name, id_to_seq)
     cached = {sid: cached[sid] for sid in ids if sid in cached}  # drop stale ids not in dataset
     todo_ids = [sid for sid in ids if sid not in cached]
     print(f"[embed] {n_rows} sequences: {len(cached)} already cached, {len(todo_ids)} to embed "
@@ -172,11 +187,11 @@ def build(dataset_csv: Path | None = None):
                                f"embedding {done_after}/{len(todo_ids)}")
             for sid, vec in zip(chunk_ids, vecs):
                 cached[sid] = vec
-            _save(cached, model_name)   # checkpoint — safe to interrupt after this
+            _save(cached, model_name, id_to_seq)   # checkpoint — safe to interrupt after this
             print(f"[embed] checkpoint saved: {len(cached)}/{n_rows} "
                   f"({time.time() - t0:.0f}s elapsed)")
 
-    X = _save(cached, model_name)
+    X = _save(cached, model_name, id_to_seq)
     newly = len(todo_ids)
     print(f"\n[embed] model: {model_name}")
     print(f"[embed] sequences: {n_rows}  |  embedding dim D: {X.shape[1] if X.ndim == 2 else 0}")

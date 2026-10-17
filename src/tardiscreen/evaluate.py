@@ -104,6 +104,16 @@ def _classifier():
     )
 
 
+def task_subset(df, task: str):
+    """Use the same population in result tables, plots, and diagnostic checks."""
+    sub = df[df["label"].isin(TASKS[task])]
+    if task in MATCHED_ONLY:
+        if "in_matched_set" not in sub.columns:
+            raise ValueError("Real-task evaluation requires in_matched_set; rerun merge_dataset.")
+        sub = sub[sub["in_matched_set"].astype(str).str.lower().isin(("true", "1"))]
+    return sub.reset_index(drop=True)
+
+
 def cluster_split_folds(y, groups, n_splits: int = N_SPLITS):
     """Yield (train_idx, test_idx) with no cluster in both sides, balancing labels across folds.
 
@@ -115,11 +125,20 @@ def cluster_split_folds(y, groups, n_splits: int = N_SPLITS):
 
     y = np.asarray(y)
     groups = np.asarray(groups)
+    if y.ndim != 1 or groups.shape != y.shape or set(y) != {0, 1}:
+        raise ValueError("Cross-validation requires aligned binary labels and cluster IDs.")
+    if any(g is None or str(g).strip() == "" or str(g).lower() == "nan" for g in groups):
+        raise ValueError("Every sequence needs a non-empty cluster ID.")
     n_pos_groups = len(set(groups[y == 1]))
     n_neg_groups = len(set(groups[y == 0]))
-    k = max(2, min(n_splits, n_pos_groups, n_neg_groups))
+    k = min(n_splits, n_pos_groups, n_neg_groups)
+    if k < 2:
+        raise ValueError("Cross-validation needs at least two clusters per class and two folds.")
     sgkf = StratifiedGroupKFold(n_splits=k, shuffle=True, random_state=SEED)
-    yield from sgkf.split(np.zeros(len(y)), y, groups)
+    folds = list(sgkf.split(np.zeros(len(y)), y, groups))
+    if any(len(set(y[tr])) < 2 or len(set(y[te])) < 2 for tr, te in folds):
+        raise ValueError("Cluster split produced a single-class fold; use more independent clusters.")
+    yield from folds
 
 
 def _cv_scores(Xmat, y, groups):
@@ -146,11 +165,7 @@ def evaluate_all() -> list[Result]:
     df, emb = _load()
     results: list[Result] = []
     for task, (pos_label, neg_label) in TASKS.items():
-        sub = df[df["label"].isin([pos_label, neg_label])]
-        if task in MATCHED_ONLY and "in_matched_set" in sub.columns:
-            flag = sub["in_matched_set"].astype(str).str.lower().isin(("true", "1"))
-            sub = sub[flag]
-        sub = sub.reset_index(drop=True)
+        sub = task_subset(df, task)
         if sub.empty or sub["label"].nunique() < 2:
             print(f"[eval] task '{task}': skipped — needs both {pos_label} and {neg_label} rows.")
             continue
@@ -181,7 +196,10 @@ def _save_plots(df, emb):
 
     # Confusion matrix + feature importance for the REAL task (protective vs other_idp).
     pos_label, neg_label = TASKS["real"]
-    sub = df[df["label"].isin([pos_label, neg_label])].reset_index(drop=True)
+    sub = task_subset(df, "real")
+    if sub.empty or sub["label"].nunique() < 2:
+        print("[eval] real-task plots skipped — missing a class.")
+        return
     y = (sub["label"] == pos_label).astype(int).to_numpy()
     groups = sub["cluster_id"].to_numpy()
 
@@ -219,7 +237,10 @@ def _save_auc_plot(results: list[Result]):
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    tasks = list(TASKS)
+    tasks = [t for t in TASKS if all(any(r.task == t and r.model == m for r in results)
+                                   for m in MODELS)]
+    if not tasks:
+        return
     hues = {"composition": "#94a3b8", "biophysical": "#60a5fa", "esm2": "#2563eb"}
     x = np.arange(len(tasks))
     width = 0.26

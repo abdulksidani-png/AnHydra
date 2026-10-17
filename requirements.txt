@@ -1,4 +1,5 @@
 # Core ML
+-e .                      # install the src-layout package for module commands and the app
 torch>=2.2
 transformers>=4.40          # ESM-2 via facebook/esm2_*
 scikit-learn>=1.4           # classifier heads, GroupKFold, metrics, calibration

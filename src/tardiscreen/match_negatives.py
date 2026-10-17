@@ -39,8 +39,13 @@ SMD_BALANCED = 0.10
 def standardized_mean_difference(a, b) -> float:
     """Cohen-style SMD: mean difference over the pooled SD. |SMD| < 0.10 is the balance convention."""
     a, b = np.asarray(a, float), np.asarray(b, float)
+    if not len(a) or not len(b):
+        return float("nan")
+    difference = float(a.mean() - b.mean())
+    if len(a) < 2 or len(b) < 2:
+        return 0.0 if difference == 0 else float(np.copysign(np.inf, difference))
     pooled = np.sqrt((a.var(ddof=1) + b.var(ddof=1)) / 2)
-    return float((a.mean() - b.mean()) / pooled) if pooled > 0 else 0.0
+    return difference / pooled if pooled > 0 else (0.0 if difference == 0 else float(np.copysign(np.inf, difference)))
 
 
 def match(positives, candidates):
@@ -57,8 +62,8 @@ def match(positives, candidates):
     available = np.ones(len(cand), dtype=bool)
 
     # Austin's rule, applied per variable on this dataset's own spread.
-    cov_caliper = CALIPER_SD_FRACTION * pos["disorder_fraction"].std(ddof=1)
-    len_caliper = CALIPER_SD_FRACTION * pos["length"].std(ddof=1)
+    cov_caliper = CALIPER_SD_FRACTION * pos["disorder_fraction"].std(ddof=0 if len(pos) < 2 else 1)
+    len_caliper = CALIPER_SD_FRACTION * pos["length"].std(ddof=0 if len(pos) < 2 else 1)
     print(f"[match] calipers (Austin 2011, 0.2 x SD of the positives): "
           f"coverage +/-{cov_caliper:.3f}, length +/-{len_caliper:.0f} aa")
 

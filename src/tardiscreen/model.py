@@ -117,11 +117,14 @@ def load_bundle() -> dict:
 
 def predict(sequence: str) -> Prediction:
     """Score a single sequence for the app. Reuses the cached fitted models + embeds the sequence."""
-    from .embed import embed_sequences
-
     bundle = load_bundle()
 
-    vec = embed_sequences([sequence])[0].astype(np.float64)
+    model_name = bundle.get("model_name")
+    if not model_name:
+        raise ValueError("Model bundle has no embedding model name; retrain before scoring.")
+    # Load the exact training encoder, even if the serving environment selects another default.
+    from .embed import embed_sequences
+    vec = embed_sequences([sequence], model_name=model_name)[0].astype(np.float64)
     score = float(bundle["esm_clf"].predict_proba([vec])[0, 1])
 
     # Per-feature contribution = standardized feature value x logistic coefficient.

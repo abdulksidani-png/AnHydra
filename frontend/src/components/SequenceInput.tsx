@@ -22,7 +22,7 @@ export function SequenceInput({
     // Cmd/Ctrl+Enter submits — worth having when you are demoing live.
     if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
       event.preventDefault();
-      onSubmit();
+      if (!isLoading) onSubmit();
     }
   }
 

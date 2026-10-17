@@ -203,6 +203,8 @@ def fetch_hard_negatives() -> list[Record]:
     This is the group that makes the project meaningful: "among disordered proteins, which protect?"
     We drop any entry whose name/organism/annotations mention a protective family or desiccation.
     """
+    from .build_negatives import _is_protective_name
+
     resp = _get(
         "https://disprot.org/api/search",
         params={"release": "current", "show_ambiguous": "true", "show_obsolete": "false",
@@ -230,7 +232,7 @@ def fetch_hard_negatives() -> list[Record]:
         sid = (e.get("acc") or e.get("disprot_id") or "").strip()
         if not seq or not sid:
             continue
-        if any(term in _disprot_text_blob(e) for term in PROTECTIVE_DROP_TERMS):
+        if _is_protective_name(_disprot_text_blob(e)):
             dropped += 1
             continue
         records.append(Record(sequence_id=sid, sequence=seq, label="other_idp",

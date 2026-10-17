@@ -15,14 +15,14 @@ from __future__ import annotations
 
 import numpy as np
 
-from .evaluate import DATA_DIR, SEED, TASKS, _cv_scores, _load, _matrix, composition_vector
+from .evaluate import DATA_DIR, SEED, TASKS, _cv_scores, _load, _matrix, composition_vector, task_subset
 from .features import AA
 
 
 def _task_frame(df, task: str):
     """Rows + labels + clusters for one task from TASKS."""
     pos_label, neg_label = TASKS[task]
-    sub = df[df["label"].isin([pos_label, neg_label])].reset_index(drop=True)
+    sub = task_subset(df, task)
     y = (sub["label"] == pos_label).astype(int).to_numpy()
     return sub, y, sub["cluster_id"].to_numpy()
 

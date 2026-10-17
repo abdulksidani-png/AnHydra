@@ -86,7 +86,7 @@ def fetch_families(accessions: list[str], chunk: int = 100):
                              protein_name=name, family=assign_family(name)))
         print(f"  [family] {min(i + chunk, len(accessions))}/{len(accessions)}")
 
-    out = pd.DataFrame(rows)
+    out = pd.DataFrame(rows, columns=["sequence_id", "protein_name", "family"])
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     out.to_csv(FAMILIES_PATH, index=False)
     print(f"[family] wrote {FAMILIES_PATH}")
@@ -101,6 +101,12 @@ def _negative_folds(neg_clusters: np.ndarray, k: int) -> list[np.ndarray]:
     assignment = {c: i % k for i, c in enumerate(clusters)}
     return [np.flatnonzero(np.array([assignment[c] for c in neg_clusters]) == i)
             for i in range(k)]
+
+
+def _holdout_train_indices(groups, test):
+    """Exclude every test cluster, including clusters spanning protective family names."""
+    groups = np.asarray(groups)
+    return np.flatnonzero(~np.isin(groups, groups[test]))
 
 
 def main():
@@ -118,7 +124,8 @@ def main():
     pos_ids = sub.loc[sub["label"] == "protective", "sequence_id"].tolist()
     fam = fetch_families(pos_ids)
     fam_by_id = dict(zip(fam["sequence_id"], fam["family"]))
-    sub["family"] = sub["sequence_id"].map(fam_by_id).fillna("negative")
+    sub["family"] = sub["sequence_id"].map(fam_by_id).fillna("other")
+    sub.loc[sub["label"] != "protective", "family"] = "negative"
 
     counts = sub[sub["label"] == "protective"]["family"].value_counts()
     print(f"\n[family] positives by family:\n{counts.to_string()}")
@@ -139,13 +146,16 @@ def main():
         test_pos = np.flatnonzero((y_all == 1) & (sub["family"] == family).to_numpy())
         test_neg = neg_idx[neg_folds[i]]
         test = np.concatenate([test_pos, test_neg])
-        train = np.setdiff1d(np.arange(len(sub)), test)
+        train = _holdout_train_indices(sub["cluster_id"].to_numpy(), test)
         # No positive of the held-out family may remain in training.
         train = train[~((y_all[train] == 1) & (sub["family"].to_numpy()[train] == family))]
 
         y_te = y_all[test]
         if len(set(y_te)) < 2:
             print(f"  {family}: only one class in the test split — skipped")
+            continue
+        if len(set(y_all[train])) < 2:
+            print(f"  {family}: only one class remains in training — skipped")
             continue
 
         esm = _classifier().fit(X[train], y_all[train]).predict_proba(X[test])[:, 1]

@@ -20,6 +20,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+dev = ["pytest>=8", "scikit-learn>=1.4"]
 # The model stack (heavy). Install with:  pip install -e ".[ml]"
 ml = [
     "torch>=2.2",

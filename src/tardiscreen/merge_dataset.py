@@ -47,7 +47,7 @@ def main(identity: float = 0.4):
     print(f"[merge] existing dataset: {dict(df['label'].value_counts())}")
     print(f"[merge] matched negatives: {len(neg)}   matched positives: {len(matched_pos_ids)}")
 
-    keep = df[df["label"] != DROP_LABEL].copy()
+    keep = df[~df["label"].isin([DROP_LABEL, NEW_LABEL])].copy()
     print(f"[merge] dropping {len(df) - len(keep)} old '{DROP_LABEL}' rows")
 
     # The new negatives, as records in the same shape as the rest of the table.

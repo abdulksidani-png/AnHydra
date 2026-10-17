@@ -49,6 +49,9 @@ def _merge_fraction(spans: list[tuple[int, int]], seq_len: int) -> float:
         return 0.0
     merged: list[list[int]] = []
     for start, end in sorted(spans):
+        start, end = max(1, start), min(seq_len, end)
+        if start > end:
+            continue
         if merged and start <= merged[-1][1] + 1:
             merged[-1][1] = max(merged[-1][1], end)
         else:

@@ -37,7 +37,7 @@ const TIMEOUT_MS = 30_000; // ESM-2 embedding on CPU is not instant
 export function cleanSequence(raw: string): string {
   const body = raw
     .split('\n')
-    .filter((line) => !line.startsWith('>'))
+    .filter((line) => !line.trim().startsWith('>'))
     .join('');
   return body
     .toUpperCase()
@@ -48,6 +48,13 @@ export function cleanSequence(raw: string): string {
 
 /** Returns an error message, or null when the sequence is worth sending. */
 export function validateSequence(raw: string): string | null {
+  const lines = raw.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const headers = lines.flatMap((line, index) => line.startsWith('>') ? [index] : []);
+  if (headers.length > 1 || (headers.length === 1 && headers[0] !== 0))
+    return 'Submit one sequence or one FASTA record at a time.';
+  const body = lines.filter((line) => !line.startsWith('>')).join('').replace(/\s/g, '').toUpperCase();
+  if (body && !VALID_RESIDUES.test(body))
+    return 'Use only the 20 standard amino-acid letters.';
   const clean = cleanSequence(raw);
   if (clean.length === 0) return 'Paste a sequence first.';
   if (clean.length < MIN_LENGTH)
