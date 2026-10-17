@@ -95,6 +95,68 @@ def check_residues(df):
           "\n  signature. Anything else leading is worth explaining.")
 
 
+def length_matched_eval(df, emb):
+    """Re-run the real task on a length-matched subset — the decisive test of the length artifact.
+
+    Greedily pairs each positive with the nearest-length unused negative, giving a 1:1 set whose
+    length distributions nearly coincide. Whatever AUC survives here cannot be explained by length.
+    Uses the cached embeddings, so this costs seconds rather than another embedding run.
+    """
+    print("\n" + "=" * 78)
+    print("5. LENGTH-MATCHED REAL TASK — what survives when length can't help?")
+    print("=" * 78)
+
+    sub, y, _ = _task_frame(df, "real")
+    lengths = np.asarray([len(s) for s in sub["sequence"]], dtype=float)
+    pos_idx = np.flatnonzero(y == 1)
+    neg_idx = list(np.flatnonzero(y == 0))
+
+    # Match longest positives first: they're the scarcest to pair against. A caliper rejects pairs
+    # that aren't genuinely close — without it, a positive with no near partner still gets matched
+    # to a far one and the distributions stay separated, which would fake the whole test.
+    pairs: list[int] = []
+    unmatched = 0
+    for p in sorted(pos_idx, key=lambda i: -lengths[i]):
+        if not neg_idx:
+            unmatched += 1
+            continue
+        best = min(neg_idx, key=lambda n: abs(lengths[n] - lengths[p]))
+        if abs(lengths[best] - lengths[p]) > max(20.0, 0.15 * lengths[p]):
+            unmatched += 1          # no negative of comparable length exists; drop the positive
+            continue
+        neg_idx.remove(best)
+        pairs.extend((p, best))
+
+    if len(pairs) < 40:
+        print(f"  too few matched pairs ({len(pairs) // 2}) — the length distributions barely "
+              "overlap,\n  which is itself the finding: the classes are nearly separable by length "
+              "alone.")
+        return
+
+    keep = np.asarray(sorted(pairs))
+    matched = sub.iloc[keep].reset_index(drop=True)
+    y_m = y[keep]
+    groups_m = matched["cluster_id"].to_numpy()
+    len_m = lengths[keep]
+
+    print(f"  matched set: {len(matched)} sequences ({int(y_m.sum())} protective), "
+          f"median length {np.median(len_m[y_m == 1]):.0f} (pos) vs "
+          f"{np.median(len_m[y_m == 0]):.0f} (neg)")
+    print(f"  dropped {unmatched} positives with no length-comparable negative "
+          f"(caliper: 15% or 20 residues)")
+    roc_before, _, _, _, _ = _cv_scores(lengths.reshape(-1, 1), y, sub["cluster_id"].to_numpy())
+    roc_len, roc_len_s, _, _, _ = _cv_scores(len_m.reshape(-1, 1), y_m, groups_m)
+    print(f"  length-only ROC-AUC {roc_before:.3f} unmatched -> {roc_len:.3f}±{roc_len_s:.3f} "
+          "matched\n  (that is the knob being turned off; the closer to 0.50, the better the "
+          "match)\n")
+
+    for model in ("composition", "biophysical", "esm2"):
+        roc, roc_s, pr, pr_s, _ = _cv_scores(_matrix(matched, emb, model), y_m, groups_m)
+        print(f"    {model:>12}: ROC-AUC {roc:.3f}±{roc_s:.3f}  PR-AUC {pr:.3f}±{pr_s:.3f}")
+    print("\n  Read: compare these against the unmatched table. What holds up is compositional"
+          "\n  biology; what drops was length. Report both numbers, not the flattering one.")
+
+
 def main():
     df, emb = _load()
     print(f"[diagnose] {len(df)} sequences with embeddings; "
@@ -103,6 +165,7 @@ def main():
     check_length(df)
     check_shuffled_control(df, emb)
     check_residues(df)
+    length_matched_eval(df, emb)
     print("\n" + "=" * 78)
     print("Interpretation: the 'trivial' task shares a source across classes, so it is the clean"
           "\ncomparison. The 'real' task does not. Any check above that scores high on 'real' but"
