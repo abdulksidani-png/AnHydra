@@ -22,6 +22,7 @@ import httpx
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from tardiscreen.explain import explain
@@ -32,7 +33,8 @@ from app.database import UserStore, database_engine
 from app.logging_safety import install_redaction
 from app.settings import Settings
 
-PAGE_PATH = Path(__file__).resolve().parent / "static" / "index.html"
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+PAGE_PATH = STATIC_DIR / "index.html"
 
 MIN_LENGTH = 20          # below this, composition/disorder signals are meaningless
 MAX_LENGTH = 1022        # ESM-2 token budget: 1024 minus BOS/EOS; never silently truncate
@@ -88,6 +90,11 @@ class UserResponse(BaseModel):
 @app.get("/me", response_model=UserResponse)
 def me(user=Depends(authenticated_user)):
     return user
+
+
+# The page's own assets: the favicon and the link-preview image. Everything here is public
+# content that the page already references, so there is nothing to withhold.
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 class ScoreRequest(BaseModel):

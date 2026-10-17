@@ -5,7 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AnHydra — desiccation-protection screening</title>
 <meta name="description" content="Paste a protein sequence. Get a desiccation-protection family score from a protein language model, with the biophysical signatures behind it.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐻</text></svg>">
+<link rel="icon" type="image/svg+xml" href="/static/icon.svg">
+<meta name="theme-color" content="#071420">
+<link rel="canonical" href="https://anhydra.work/">
+
+<!-- Link preview. og:image must be absolute: scrapers do not resolve relative paths. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AnHydra">
+<meta property="og:url" content="https://anhydra.work/">
+<meta property="og:title" content="AnHydra — does this protein look like it can survive drying out?">
+<meta property="og:description" content="Paste a protein sequence. A protein language model scores it for desiccation-protective family character and explains the biophysical signatures behind the call.">
+<meta property="og:image" content="https://anhydra.work/static/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="AnHydra: 0.818 AUC on a protein family the model had never seen.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="AnHydra — does this protein look like it can survive drying out?">
+<meta name="twitter:description" content="A protein language model scores any sequence for desiccation-protective family character, and explains why.">
+<meta name="twitter:image" content="https://anhydra.work/static/og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
@@ -474,7 +491,7 @@ footer .mono{font-size:12px}
         <button class="chip" data-ex="folded">folded control</button>
         <span class="count mono" id="count">0 residues</span>
       </div>
-      <p class="alert" id="error" role="alert" hidden></p>
+      <p class="alert" id="error" role="alert" tabindex="-1" hidden></p>
       <p class="alert warn" id="untrained" hidden>
         The model is not loaded on this server, so scoring will fail. Run
         <code class="mono">python -m tardiscreen.model</code> and restart the service.
@@ -515,7 +532,7 @@ footer .mono{font-size:12px}
       </div>
     </div>
 
-    <div id="loading" hidden class="skeleton stack">
+    <div id="loading" hidden class="skeleton stack" aria-busy="true" aria-label="Scoring the sequence">
       <div class="card"><div class="shimmer"></div><div class="shimmer"></div><div class="shimmer"></div></div>
       <div class="card"><div class="shimmer"></div><div class="shimmer"></div></div>
       <p class="muted" style="text-align:center">Embedding the sequence with ESM-2… the first request after a restart takes about 15 seconds while the model loads.</p>
@@ -699,20 +716,41 @@ fetch("/health").then(r=>r.json()).then(h => {
   if (!h.model_trained) $("untrained").hidden = false;
 }).catch(()=>{ $("stamp-status").textContent = "server unreachable"; });
 
-function showError(msg){
-  $("error").textContent = msg; $("error").hidden = false;
+function showError(msg, retry){
+  const box = $("error");
+  box.textContent = msg;
+  if (retry) {                       // a failed request needs a way back, not just a verdict
+    const again = document.createElement("button");
+    again.className = "chip"; again.type = "button"; again.textContent = "Try again";
+    again.style.marginLeft = "12px";
+    again.addEventListener("click", run);
+    box.append(again);
+  }
+  box.hidden = false;
+  // Point the field at its own error, and take focus there so it is not missed.
+  const field = $("seq");
+  field.setAttribute("aria-invalid", "true");
+  field.setAttribute("aria-describedby", "error");
+  box.focus();
   $("loading").hidden = true; $("results").hidden = true; $("idle").hidden = false;
+}
+
+function clearError(){
+  $("error").hidden = true;
+  $("seq").removeAttribute("aria-invalid");
+  $("seq").removeAttribute("aria-describedby");
 }
 
 async function run(){
   if ($("go").disabled) return;
   const sequence = $("seq").value.trim();
-  $("error").hidden = true;
+  clearError();
   if (!sequence) { showError("Paste a sequence first, or try one of the examples."); return; }
 
   const btn = $("go");
   btn.disabled = true; btn.textContent = "Screening…";
   $("results").hidden = true; $("idle").hidden = true; $("loading").hidden = false;
+  $("results").setAttribute("aria-busy", "true");
   try {
     const res  = await fetch("/score", {method:"POST",
       headers:{"content-type":"application/json"}, body: JSON.stringify({sequence})});
@@ -720,10 +758,11 @@ async function run(){
     if (!res.ok) { showError(data.detail || "Scoring failed."); return; }
     render(data, sequence);
   } catch (e) {
-    showError("Could not reach the server. Is it still running?");
+    showError("Could not reach the server — it may be restarting.", true);
   } finally {
     btn.disabled = false; btn.textContent = "Screen sequence";
     $("loading").hidden = true;
+    $("results").setAttribute("aria-busy", "false");
   }
 }
 
