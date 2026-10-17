@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About us — AnHydra</title>
+<meta name="description" content="The four people behind AnHydra, and why we built a screener for proteins that let life survive drying out.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐻</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Same water-column tokens as index.html, so the two pages read as one site. */
+:root{
+  --abyss:#071420; --abyss-2:#040d16;
+  --column:#0e2030; --column-raised:#14293a;
+  --foam:#e9f2f7; --silt:#9fb6c6; --silt-deep:#7f9bad;
+  --rule:#1b3346; --rule-strong:#29485f; --rule-faint:#132637;
+  --glow:#44d3c4; --glow-deep:#2aa698; --amber:#e9a23b;
+  --serif:'Spectral',Georgia,'Times New Roman',serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  --radius:10px; --measure:1060px;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0; background:var(--abyss); color:var(--foam);
+  font:400 17px/1.65 var(--serif); -webkit-font-smoothing:antialiased; overflow-x:hidden}
+.ocean{position:fixed; inset:0; z-index:-2; background:
+  radial-gradient(900px 600px at 15% -10%, #11384a 0%, transparent 60%),
+  radial-gradient(1100px 700px at 85% 0%, #0d2c3e 0%, transparent 55%),
+  linear-gradient(180deg,#08192600 0%,var(--abyss-2) 85%), var(--abyss)}
+.caustics{position:fixed; inset:-20%; z-index:-1; opacity:.28; pointer-events:none;
+  background:
+    repeating-linear-gradient(104deg, transparent 0 38px, rgba(68,211,196,.055) 38px 40px),
+    repeating-linear-gradient(76deg,  transparent 0 54px, rgba(111,182,255,.04) 54px 56px);
+  animation:drift 44s linear infinite}
+@keyframes drift{from{transform:translate3d(0,0,0)}to{transform:translate3d(-56px,38px,0)}}
+@media (prefers-reduced-motion:reduce){.caustics{animation:none}}
+
+.shell{max-width:var(--measure); margin:0 auto; padding:40px 16px 90px}
+a{color:var(--glow); text-underline-offset:3px; text-decoration-thickness:1px}
+a:hover{color:var(--foam)}
+:focus-visible{outline:2px solid var(--glow); outline-offset:3px; border-radius:3px}
+
+/* Masthead (matches the home page) */
+.masthead{display:flex; gap:22px; align-items:flex-end; flex-wrap:wrap;
+  padding-bottom:18px; border-bottom:1px solid var(--rule-strong)}
+.mark{width:92px;height:56px;flex:0 0 auto}
+.mark .body{stroke:var(--glow)} .mark .leg{stroke:var(--glow-deep)} .mark .rule{stroke:var(--amber)}
+.titles{flex:1 1 300px;min-width:0}
+.home{color:inherit; text-decoration:none}
+h1{margin:0; font-size:clamp(36px,6vw,54px); font-weight:600; letter-spacing:-.02em; line-height:1}
+h1 .hy{color:var(--glow)}
+.tagline{margin:6px 0 0; color:var(--silt); font-size:17px}
+.nav{flex:0 0 auto; display:flex; gap:18px; font:500 12.5px/1 var(--mono); letter-spacing:.06em;
+  text-transform:uppercase}
+.nav a{color:var(--silt); text-decoration:none; padding:6px 0}
+.nav a:hover,.nav a[aria-current]{color:var(--glow)}
+
+/* Sections */
+.eyebrow{margin:0 0 12px; font:500 12px/1 var(--mono); letter-spacing:.14em;
+  text-transform:uppercase; color:var(--glow)}
+section{padding:52px 0 0}
+.lead{margin:0; font-size:clamp(26px,3.3vw,38px); font-weight:600; line-height:1.2;
+  letter-spacing:-.018em; max-width:24ch}
+.lead em{font-style:normal; color:var(--glow)}
+.prose{max-width:66ch; color:var(--silt)}
+.prose p{margin:18px 0 0}
+.prose strong{color:var(--foam); font-weight:600}
+
+.mission{margin:0; padding:28px 30px; border:1px solid var(--rule-strong); border-left:3px solid var(--glow);
+  border-radius:var(--radius); background:linear-gradient(180deg,rgba(20,41,58,.82),rgba(14,32,48,.82));
+  font-size:clamp(20px,2.4vw,25px); line-height:1.45}
+.mission cite{display:block; margin-top:14px; font:500 12px/1 var(--mono); font-style:normal;
+  letter-spacing:.1em; text-transform:uppercase; color:var(--silt-deep)}
+
+.reasons{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr)); gap:18px; margin-top:26px}
+.reason{padding:22px; border:1px solid var(--rule); border-radius:var(--radius); background:rgba(14,32,48,.55)}
+.reason .n{font:600 12px/1 var(--mono); color:var(--amber); letter-spacing:.1em}
+.reason h3{margin:10px 0 8px; font-size:19px; font-weight:600; line-height:1.3}
+.reason p{margin:0; color:var(--silt); font-size:15.5px}
+
+/* Team */
+.team{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr)); gap:18px; margin-top:26px}
+.person{display:flex; flex-direction:column; padding:24px 22px; border:1px solid var(--rule);
+  border-radius:var(--radius); background:linear-gradient(180deg,rgba(20,41,58,.82),rgba(14,32,48,.82));
+  transition:border-color .2s ease, transform .2s ease}
+.person:hover{border-color:var(--rule-strong); transform:translateY(-2px)}
+/* Photo frame: a fixed 4:5 portrait slot. Initials sit underneath, so a missing
+   photo still looks intentional; the image covers them once it loads. */
+.photo{position:relative; margin:-24px -22px 0; aspect-ratio:4/5; overflow:hidden;
+  border-radius:var(--radius) var(--radius) 0 0; border-bottom:1px solid var(--rule-strong);
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(68,211,196,.16), transparent 65%),
+    var(--column-raised)}
+.photo .initials{position:absolute; inset:0; display:grid; place-items:center;
+  font:600 clamp(40px,5vw,56px)/1 var(--mono); letter-spacing:.06em; color:var(--glow); opacity:.55}
+.photo img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+  object-position:50% 25%; transition:transform .4s ease}
+.person:hover .photo img{transform:scale(1.03)}
+.person h3{margin:20px 0 2px; font-size:21px; font-weight:600; line-height:1.2}
+.role{margin:0; font:500 12px/1.5 var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--amber)}
+.person ul{margin:14px 0 0; padding:0 0 0 18px; color:var(--silt); font-size:15px}
+.person li{margin:4px 0}
+.person li::marker{color:var(--glow-deep)}
+.gh{margin-top:auto; padding-top:16px; font:500 13px/1 var(--mono)}
+
+.built{display:flex; flex-wrap:wrap; gap:8px; margin-top:20px; padding:0; list-style:none}
+.built li{padding:6px 12px; border:1px solid var(--rule-strong); border-radius:999px;
+  font:500 12.5px/1.2 var(--mono); color:var(--silt)}
+
+.cta{display:inline-block; margin-top:28px; padding:13px 22px; border-radius:6px;
+  background:var(--glow); color:#06161a; font-weight:600; text-decoration:none}
+.cta:hover{background:var(--glow-deep); color:#06161a}
+
+footer{margin-top:60px; padding-top:18px; border-top:1px solid var(--rule-faint);
+  display:flex; flex-wrap:wrap; gap:10px 24px; justify-content:space-between;
+  color:var(--silt-deep); font-size:14px}
+footer .mono{font-family:var(--mono); font-size:12px}
+</style>
+</head>
+<body>
+<div class="ocean" aria-hidden="true"></div>
+<div class="caustics" aria-hidden="true"></div>
+
+<div class="shell">
+  <header class="masthead">
+    <a class="home" href="/" aria-label="AnHydra home">
+      <svg class="mark" viewBox="0 0 96 56" aria-hidden="true" fill="none" stroke-width="2.2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path class="body" d="M14 28C14 16 26 12 40 12L66 12C80 12 88 18 88 28C88 38 80 44 66 44L40 44C26 44 14 40 14 28Z"/>
+        <path class="leg" d="M26 44 22 53M40 44 37 53M54 44 52 53M68 44 67 53M26 12 22 4M40 12 37 4M54 12 52 4M68 12 67 4M14 28 5 24M14 28 5 33"/>
+        <path class="rule" stroke-width="1.5" d="M34 22H56M34 28H60M34 34H56"/>
+      </svg>
+    </a>
+    <div class="titles">
+      <a class="home" href="/"><h1>An<span class="hy">Hydra</span></h1></a>
+      <p class="tagline">About the team and the project</p>
+    </div>
+    <nav class="nav" aria-label="Site">
+      <a href="/">Screen a sequence</a>
+      <a href="/about" aria-current="page">About us</a>
+    </nav>
+  </header>
+
+  <main>
+    <section aria-labelledby="why">
+      <p class="eyebrow" id="why">Why we built this</p>
+      <p class="lead">An animal smaller than a grain of sand can lose almost all its water and <em>come back to life</em>. We wanted to know which proteins make that possible.</p>
+      <div class="prose">
+        <p>Tardigrades survive drying out by turning the inside of their cells into a kind of glass,
+        holding everything in place until water returns. A few protein families do that work:
+        CAHS proteins in tardigrades, and LEA proteins and dehydrins in plants. If we could find
+        more proteins like them, we could help vaccines, medicines and crops survive without
+        refrigeration. Keeping medicine cold is one of the hardest parts of getting it to the
+        people who need it.</p>
+        <p>The search is slow. Labs can only test a handful of candidates, and there are millions
+        of known protein sequences. We came to <strong>SwampHacks XII</strong> wanting to build
+        something with real science underneath it, not just a demo. A first-pass filter seemed
+        like a problem a team of four could take seriously in a weekend: paste a sequence, find
+        out whether it looks like one of the protective families, and see <em>why</em>.</p>
+        <p>Along the way, the project taught us something we didn't expect. Our model scored
+        <strong>0.987</strong> on the test we had designed to be hard. Instead of celebrating, we went
+        looking for the catch, and found it: our "negative" examples were mostly folded proteins, so the
+        task was easier than it looked. We rebuilt the data and reported the honest number. That became
+        the heart of the project.</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="mission-h">
+      <p class="eyebrow" id="mission-h">Our mission</p>
+      <blockquote class="mission">
+        Find the proteins that let life survive without water, and be honest about what a model
+        can and cannot tell you.
+        <cite>The AnHydra team</cite>
+      </blockquote>
+
+      <div class="reasons">
+        <div class="reason">
+          <span class="n">01</span>
+          <h3>Triage, not prophecy</h3>
+          <p>AnHydra asks “does this look like a protective family?”, never “how well will it protect?”</p>
+        </div>
+        <div class="reason">
+          <span class="n">02</span>
+          <h3>No made-up numbers</h3>
+          <p>If the model can’t score, the site says so. It never shows a guess dressed up as a result.</p>
+        </div>
+        <div class="reason">
+          <span class="n">03</span>
+          <h3>Doubt good results</h3>
+          <p>Our best finding came from questioning our best score, not from accepting it.</p>
+        </div>
+        <div class="reason">
+          <span class="n">04</span>
+          <h3>Explain every score</h3>
+          <p>Each result shows the sequence features behind it, in plain language.</p>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="team-h">
+      <p class="eyebrow" id="team-h">The team</p>
+      <p class="lead">Four developers, one weekend.</p>
+
+      <div class="team">
+        <article class="person">
+          <div class="photo">
+            <span class="initials" aria-hidden="true">AS</span>
+            <img src="/team-photos/abdul.jpg" alt="Photo of Abdul Sidani" loading="lazy" onerror="this.remove()">
+          </div>
+          <h3>Abdul Sidani</h3>
+          <p class="role">Data, model &amp; evaluation</p>
+          <ul>
+            <li>Built the data pipeline and ESM-2 embeddings</li>
+            <li>Trained the model and designed the two-tier evaluation</li>
+            <li>Ran the confound checks that caught the flawed negatives</li>
+            <li>Redesigned the results page for desktop and phone</li>
+          </ul>
+          <a class="gh" href="https://github.com/abdulksidani-png">@abdulksidani-png</a>
+        </article>
+
+        <article class="person">
+          <div class="photo">
+            <span class="initials" aria-hidden="true">BB</span>
+            <img src="/team-photos/benjamin.jpg" alt="Photo of Benjamin Berrizbeitia" loading="lazy" onerror="this.remove()">
+          </div>
+          <h3>Benjamin Berrizbeitia</h3>
+          <p class="role">Backend, auth &amp; release</p>
+          <ul>
+            <li>Built Auth0 token verification and user accounts</li>
+            <li>Designed how sign-in fits the backend and frontend</li>
+            <li>Hardened scoring, releases and deployment checks</li>
+            <li>Fixed Gemini model selection and explanations</li>
+          </ul>
+          <a class="gh" href="https://github.com/Benberrizb">@Benberrizb</a>
+        </article>
+
+        <article class="person">
+          <div class="photo">
+            <span class="initials" aria-hidden="true">GG</span>
+            <img src="/team-photos/gayathri.jpg" alt="Photo of Gayathri Gunda" loading="lazy" onerror="this.remove()">
+          </div>
+          <h3>Gayathri Gunda</h3>
+          <p class="role">Frontend design</p>
+          <ul>
+            <li>Built the first AnHydra React results page</li>
+            <li>Created the dark “water column” look</li>
+            <li>Designed the hydra mark</li>
+          </ul>
+          <a class="gh" href="https://github.com/Gayathri-Gunda">@Gayathri-Gunda</a>
+        </article>
+
+        <article class="person">
+          <div class="photo">
+            <span class="initials" aria-hidden="true">VR</span>
+            <img src="/team-photos/vitor.jpg" alt="Photo of Vitor Ribeiro" loading="lazy" onerror="this.remove()">
+          </div>
+          <h3>Vitor Ribeiro</h3>
+          <p class="role">Domain, sign-in &amp; deploy</p>
+          <ul>
+            <li>Registered anhydra.work and pointed it at our server</li>
+            <li>Set up Auth0 for Google and .edu sign-in</li>
+            <li>Built the sign-in page and account menu</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section aria-labelledby="built-h">
+      <p class="eyebrow" id="built-h">Built with</p>
+      <ul class="built">
+        <li>ESM-2</li><li>PyTorch</li><li>scikit-learn</li><li>FastAPI</li><li>React</li>
+        <li>Gemini API</li><li>Auth0</li><li>Vultr</li><li>Caddy</li><li>PostgreSQL</li><li>anhydra.work</li>
+      </ul>
+      <a class="cta" href="/">Screen a sequence →</a>
+    </section>
+  </main>
+
+  <footer>
+    <span>Built at SwampHacks XII · University of Florida · October 2026</span>
+    <span class="mono"><a href="https://github.com/abdulksidani-png/tardiscreen">source &amp; methodology</a></span>
+  </footer>
+</div>
+</body>
+</html>

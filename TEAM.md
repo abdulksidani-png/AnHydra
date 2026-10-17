@@ -46,7 +46,7 @@ why it worked. AnHydra was built at **SwampHacks XII** (University of Florida, O
 | | Developer | Focus |
 | --- | --- | --- |
 | 🧬 | [Abdul Sidani](#abdul-sidani) | Data, model and evaluation |
-| 🛡️ | [Benberrizb](#benberrizb) | Backend, auth and release hardening |
+| 🛡️ | [Benjamin Berrizbeitia](#benjamin-berrizbeitia) | Backend, auth and release hardening |
 | 🎨 | [Gayathri Gunda](#gayathri-gunda) | Frontend design |
 | 🌐 | [Vitor Ribeiro](#vitor-ribeiro) | Domain, sign-in and deployment |
 
@@ -71,11 +71,9 @@ why it worked. AnHydra was built at **SwampHacks XII** (University of Florida, O
 
 ---
 
-### Benberrizb
+### Benjamin Berrizbeitia
 
 **Role:** Backend and security · [@Benberrizb](https://github.com/Benberrizb)
-
-<!-- TODO: add your full name to the heading and the table above. -->
 
 **What I built**
 - Auth0 token verification on the backend, with PostgreSQL user accounts and migrations
@@ -133,7 +131,7 @@ on each other:
 | Lane | Owner | Files |
 | --- | --- | --- |
 | Data and model | Abdul | `src/tardiscreen/` |
-| Backend and auth | Benberrizb | `app/`, `migrations/` |
+| Backend and auth | Benjamin | `app/`, `migrations/` |
 | Frontend | Gayathri, Abdul | `frontend/`, `app/static/` |
 | Domain, sign-in and deploy | Vitor | Auth0, DNS, `deploy/` |
 

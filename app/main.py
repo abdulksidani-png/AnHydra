@@ -20,6 +20,7 @@ from uuid import UUID
 
 import httpx
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
@@ -33,6 +34,8 @@ from app.logging_safety import install_redaction
 from app.settings import Settings
 
 PAGE_PATH = Path(__file__).resolve().parent / "static" / "index.html"
+ABOUT_PATH = Path(__file__).resolve().parent / "static" / "about.html"
+TEAM_PHOTOS_DIR = Path(__file__).resolve().parent / "static" / "team"
 
 MIN_LENGTH = 20          # below this, composition/disorder signals are meaningless
 MAX_LENGTH = 1022        # ESM-2 token budget: 1024 minus BOS/EOS; never silently truncate
@@ -180,3 +183,13 @@ def index() -> str:
     """The results page. Read from disk per request so an edit shows up on reload in dev;
     under systemd the checkout is a read-only mount, so this is a cheap cached read either way."""
     return PAGE_PATH.read_text(encoding="utf-8")
+
+
+# Team headshots for /about. check_dir=False so a missing folder never stops the app starting.
+app.mount("/team-photos", StaticFiles(directory=TEAM_PHOTOS_DIR, check_dir=False), name="team-photos")
+
+
+@app.get("/about", response_class=HTMLResponse)
+def about() -> str:
+    """The team page: who built AnHydra and why."""
+    return ABOUT_PATH.read_text(encoding="utf-8")
