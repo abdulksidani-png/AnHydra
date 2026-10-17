@@ -67,7 +67,7 @@ def match(positives, candidates):
         best = options[int(np.argmin(d_cov + d_len))]
         available[best] = False
         pairs.append((i, int(best)))
-    return pairs, pos, cand
+    return pairs, pos, cand, eligible
 
 
 def _auc(values, labels, groups=None) -> float:
@@ -107,7 +107,21 @@ def main():
               " coverage as approximate,\n        or re-measure the positives through the same"
               " route before trusting it.")
 
-    pairs, pos, cand = match(pos, cand)
+    pairs, pos, cand, eligible = match(pos, cand)
+
+    # How well the pool actually covers the positives — this, not raw pool size, decides whether
+    # matching can succeed. A positive with no candidate inside its calipers is unmatchable no
+    # matter how large the pool is.
+    counts = np.array([len(e) for e in eligible.values()])
+    print("\n[match] eligible partners per positive (before assignment):")
+    for lo, hi, name in [(0, 1, "none"), (1, 3, "1-2"), (3, 11, "3-10"), (11, 10**9, "11+")]:
+        n = int(((counts >= lo) & (counts < hi)).sum())
+        print(f"    {name:>5}: {'#' * min(n // 20, 50):<50} {n}")
+    print(f"    median {np.median(counts):.0f} eligible per positive; "
+          f"{int((counts == 0).sum())} positives have none")
+    if (counts == 0).mean() > 0.3:
+        print("    -> the pool does not cover the positives' coverage/length region. More"
+              "\n       candidates there, or wider calipers, before the pairing means anything.")
     if not pairs:
         print("[match] no pairs within the calipers. Widen them or enlarge the pool.")
         return
