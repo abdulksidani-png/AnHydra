@@ -29,6 +29,10 @@ class Prediction:
     label: str                   # argmax family call
     top_features: list[tuple[str, float]]   # (feature_name, contribution), for the "why"
     nearest_homolog: str | None = None       # id of nearest known protective sequence
+    # The biophysical model's own probability. `score` is ESM-2's, but top_features decompose the
+    # BIOPHYSICAL model, so the explanation is a surrogate for the score. Keeping that model's
+    # probability lets a caller see whether the surrogate agrees before trusting the drivers.
+    bio_score: float | None = None
 
 
 def featurize(sequences: list[str]) -> np.ndarray:
@@ -134,6 +138,9 @@ def predict(sequence: str) -> Prediction:
     contrib = scaler.transform([bio])[0] * logreg.coef_[0]
     top = sorted(zip(bundle["feature_names"], contrib), key=lambda t: abs(t[1]), reverse=True)[:3]
     top_features = [(name, float(c)) for name, c in top]
+    # The surrogate's own call. Free here (the pipeline is already fitted and `bio` already
+    # computed) and it is what tells a reader whether the contributions above explain the score.
+    bio_score = float(bundle["bio_clf"].predict_proba([bio])[0, 1])
 
     # Nearest known protective homolog by cosine similarity.
     nearest = None
@@ -143,7 +150,7 @@ def predict(sequence: str) -> Prediction:
         nearest = bundle["homolog_ids"][int(np.argmax(sims))]
 
     return Prediction(score=score, label=POSITIVE if score >= 0.5 else "other_idp",
-                     top_features=top_features, nearest_homolog=nearest)
+                     top_features=top_features, nearest_homolog=nearest, bio_score=bio_score)
 
 
 __all__ = ["Prediction", "featurize", "train_embedding_model", "train_feature_model", "train",
