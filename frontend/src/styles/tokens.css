@@ -1,0 +1,61 @@
+/**
+ * AnHydra design tokens.
+ *
+ * The subject is anhydrobiosis — survival without water. So the ground is a
+ * water column seen from depth (blue-black, never neutral grey), and the one
+ * luminous colour belongs to living tissue: a cnidarian cyan-teal. Nothing
+ * else glows. Change a value here and it changes everywhere; avoid
+ * hard-coding colours in components.
+ */
+
+:root {
+  /* --- Ground: the water column, dark to light --- */
+  --abyss: #091620;        /* page */
+  --column: #0f2130;       /* cards */
+  --column-raised: #162d3e; /* inputs, sunken panels */
+
+  /* --- Ink --- */
+  --foam: #e8f1f6;         /* primary text */
+  --silt: #9fb6c6;         /* secondary text */
+  --silt-deep: #7793a6;    /* tertiary, never load-bearing */
+
+  /* --- Rules and edges --- */
+  --rule: #1d3447;
+  --rule-strong: #2a4a62;
+  --rule-faint: #152b3c;
+
+  /* --- Signals. Two, and they differ in lightness as well as hue. --- */
+  --glow: #44d3c4;         /* protective, "for", live values */
+  --glow-deep: #2aa698;    /* pressed / hover */
+  --amber: #e9a23b;        /* "against", caution */
+
+  /* --- Semantic --- */
+  --positive: var(--glow);
+  --negative: var(--amber);
+
+  --caution-bg: #211e10;
+  --caution-border: #4a3f1c;
+  --caution-ink: #efd49b;
+
+  --alert-bg: #2a1512;
+  --alert-border: #5c2a22;
+  --alert-ink: #f3b7a6;
+
+  /* --- Type --- */
+  --font-serif: 'Spectral', Georgia, 'Times New Roman', serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* --- Space --- */
+  --gap-xs: 6px;
+  --gap-sm: 10px;
+  --gap-md: 16px;
+  --gap-lg: 24px;
+  --gap-xl: 40px;
+
+  /* --- Shape --- */
+  --radius: 6px;
+  --radius-sharp: 3px;
+
+  /* --- Layout --- */
+  --measure: 980px;
+}
