@@ -4,29 +4,37 @@ A React frontend for AnHydra, in the "field guide" direction: warm paper,
 forest green and ochre, a serif for the editorial voice and a geometric sans
 for anything mechanical.
 
-It talks to the **existing** backend in `abdulksidani-png/tardiscreen` —
-`POST /score` and `GET /health` — with no backend changes needed.
+It connects to this repository's authenticated FastAPI backend through `GET /me`,
+`POST /score`, and public `GET /health`. Run the commands below from this branch's
+integrated app directory, `frontend/anhydra-frontend`.
 
 ```
-npm install
+npm ci
+npm test
 npm run dev          # http://localhost:5173
 ```
 
-By default `npm run dev` proxies `/score` and `/health` to
-`http://127.0.0.1:8000`. To develop against the live model instead, put this
-in `.env.local`:
+Copy `.env.example` to `.env.local` and supply the public Auth0 domain, SPA client
+ID, and API audience matching the backend. Follow [AUTH.md](AUTH.md) for the signed
+claims the tenant must issue. Start the backend from the repository root:
 
 ```
-VITE_PROXY_TARGET=http://64.177.42.245
+python -m uvicorn app.main:app --env-file .env --host 127.0.0.1 --port 8000
 ```
 
-To work on the UI with no backend at all, set `VITE_USE_MOCK=true` and it uses
-fixtures and sends no requests.
+Vite proxies `/me`, `/score`, `/health`, and `/ready` to `http://127.0.0.1:8000`.
+Leave `VITE_API_BASE` empty to use that proxy. Configure `VITE_PROXY_TARGET` for
+another backend; use HTTPS for remote servers.
+
+For anonymous local work, leave the three frontend Auth0 fields empty and set
+`VITE_AUTH0_ALLOW_ANONYMOUS=true`. The backend independently requires
+`APP_ENV=development` and `AUTH_DEV_ANONYMOUS=true`. For UI-only fixtures, also set
+`VITE_USE_MOCK=true`. Production builds reject both flags.
 
 ## Deploying
 
 See `DEPLOY.md`. Short version: `npm run build`, then have Caddy serve `dist/`
-and proxy `/score` and `/health` to uvicorn.
+and proxy `/me`, `/score`, `/health`, and `/ready` to uvicorn.
 
 ## The API contract
 
@@ -59,9 +67,10 @@ an alignment, and the card says so.
 There is no automatic fallback to fixtures when a request fails. The backend
 returns 503 rather than inventing a score, because a fabricated number would
 undercut the project; a UI that silently swapped in sample data on failure
-would reintroduce exactly that problem. A 503 renders as "The server cannot
-score yet" with the backend's own message. Fixtures appear only when you set
-`VITE_USE_MOCK=true` yourself, and say so in a banner.
+would reintroduce exactly that problem. A 503 renders as "Screening is temporarily
+unavailable" with the backend message and retry. It may originate from identity
+keys, PostgreSQL, or model inference. Fixtures require development mode and
+explicit `VITE_USE_MOCK=true`, and are labeled in the UI.
 
 `GET /health` is checked once on load, so "the model isn't loaded" shows up
 before anyone pastes a sequence and waits.
@@ -124,8 +133,10 @@ Accessibility: every control is a real `<button>`, `<a>` or labelled
 respects `prefers-reduced-motion`. Text contrast is at or above 4.5:1 on the
 paper ground.
 
-## Not verified yet
+## Validation
 
-This was written in an environment with no npm access, so `npm install` and
-`npm run build` have not been run against it. Expect to spend a few minutes on
-a first typecheck.
+Frontend auth/client tests, TypeScript checks, and a production build with placeholder
+public auth settings pass. The HTTP integration test in `tests/test_frontend_integration.py`
+connects the actual clients through Vite to FastAPI and PostgreSQL using controlled
+signing keys and a stubbed model. Real Auth0 login and real inference remain separate
+deployment checks. See [AUTH.md](AUTH.md) for test commands and tenant requirements.

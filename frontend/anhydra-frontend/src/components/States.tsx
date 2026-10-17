@@ -15,7 +15,7 @@ interface ErrorBannerProps {
  */
 export function ErrorBanner({ message, kind, onRetry, onSignOut }: ErrorBannerProps) {
   const HEADINGS: Record<string, string> = {
-    model_untrained: 'The server cannot score yet.',
+    unavailable: 'Screening is temporarily unavailable.',
     network: 'Could not reach the backend.',
     validation: 'That sequence needs a change.',
     auth_pending: 'Still signing you in.',
@@ -29,7 +29,7 @@ export function ErrorBanner({ message, kind, onRetry, onSignOut }: ErrorBannerPr
     <div className="banner banner--error" role="alert">
       <span className="banner__text">
         <strong>{heading}</strong> {message}
-        {kind === 'model_untrained' && (
+        {kind === 'unavailable' && (
           <span className="banner__hint">
             {' '}
             No score is shown rather than a made-up one.

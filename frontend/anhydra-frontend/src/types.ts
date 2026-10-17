@@ -56,8 +56,8 @@ export interface HealthResponse {
 export type ScreenErrorKind =
   /** Failed our own check before sending, or the backend returned 400/422. */
   | 'validation'
-  /** 503 — models.joblib is missing on the server. */
-  | 'model_untrained'
+  /** 503 — identity keys, database, model, or inference is unavailable. */
+  | 'unavailable'
   /** Couldn't reach the backend at all. */
   | 'network'
   /** 5xx other than 503. */

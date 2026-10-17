@@ -4,7 +4,8 @@ import {
   type ScoreRequest,
   type ScoreResponse,
 } from '../types';
-import { TokenError, authorizationHeaders } from '../auth/token';
+import { TokenError, authorizationHeaders, tokenEpoch } from '../auth/token';
+import { API_BASE } from './config';
 import { mockScore } from './mock';
 
 /**
@@ -12,7 +13,6 @@ import { mockScore } from './mock';
  * built frontend is served from the same host as the API. Set VITE_API_BASE
  * only if the UI is hosted somewhere other than the FastAPI/Caddy box.
  */
-const API_BASE = import.meta.env.VITE_API_BASE ?? '';
 
 /**
  * Fixtures are OPT-IN ONLY, for working on the UI with no backend running.
@@ -23,12 +23,12 @@ const API_BASE = import.meta.env.VITE_API_BASE ?? '';
  * that quietly swapped in sample data on error would reintroduce exactly the
  * problem the 503 exists to prevent. Errors surface as errors.
  */
-const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
+const USE_MOCK = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true';
 
 const VALID_RESIDUES = /^[ACDEFGHIKLMNPQRSTVWY]+$/;
 const MIN_LENGTH = 20; // matches MIN_LENGTH in app/main.py
-const MAX_LENGTH = 10_000; // matches MAX_LENGTH in app/main.py
-const TIMEOUT_MS = 30_000; // ESM-2 embedding on CPU is not instant
+const MAX_LENGTH = 1022; // ESM-2 token budget, matching app/main.py
+const TIMEOUT_MS = 120_000; // matches the backend deployment smoke check
 
 /**
  * Access tokens come from src/auth/token.ts, the same path /me uses, so there
@@ -104,6 +104,7 @@ export async function scoreSequence(request: ScoreRequest): Promise<ScoreResult>
     return { data: mockScore(cleanSequence(request.sequence)), isMock: true };
   }
 
+  const epoch = tokenEpoch();
   const auth = await authHeaders();
 
   let response: Response;
@@ -128,15 +129,17 @@ export async function scoreSequence(request: ScoreRequest): Promise<ScoreResult>
   }
 
   if (response.ok) {
-    return { data: (await response.json()) as ScoreResponse, isMock: false };
+    const data = (await response.json()) as ScoreResponse;
+    if (epoch !== tokenEpoch()) throw new ScreenError('Your session changed. Try again.', 'auth_pending');
+    return { data, isMock: false };
   }
 
   const detail = await extractDetail(response);
 
   if (response.status === 503) {
     throw new ScreenError(
-      detail ?? 'The model is not loaded on the server.',
-      'model_untrained',
+      detail ?? 'A service needed for screening is temporarily unavailable.',
+      'unavailable',
     );
   }
   if (response.status === 401) {

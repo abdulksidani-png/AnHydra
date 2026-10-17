@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { checkHealth, cleanSequence, scoreSequence } from '../api/client';
 import { ScreenError, type ScoreResponse, type ScreenErrorKind } from '../types';
+import { tokenEpoch } from '../auth/token';
 
 export type ScreenStatus = 'idle' | 'loading' | 'success' | 'error';
 
@@ -43,16 +44,18 @@ export function useScreen() {
     });
     return () => {
       cancelled = true;
+      runId.current += 1;
     };
   }, []);
 
   const run = useCallback(async (raw: string) => {
     const id = ++runId.current;
+    const epoch = tokenEpoch();
     setState((prev) => ({ ...prev, status: 'loading', error: null, errorKind: null }));
 
     try {
       const { data, isMock } = await scoreSequence({ sequence: raw });
-      if (id !== runId.current) return;
+      if (id !== runId.current || epoch !== tokenEpoch()) return;
       setState({
         status: 'success',
         data,
@@ -62,7 +65,7 @@ export function useScreen() {
         isMock,
       });
     } catch (error) {
-      if (id !== runId.current) return;
+      if (id !== runId.current || epoch !== tokenEpoch()) return;
       const isKnown = error instanceof ScreenError;
       setState((prev) => ({
         ...prev,

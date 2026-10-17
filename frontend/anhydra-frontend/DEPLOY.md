@@ -1,121 +1,34 @@
-# Deploying this UI to the Vultr box
+# Deploy the authenticated frontend
 
-For whoever owns deploy/infra (per `docs/STATUS.md`, that's Teammate 1 — systemd, Caddy, `.env`, DNS).
+On this branch the integrated app is `frontend/anhydra-frontend`. The older
+`frontend/src` app remains separate. Build and deploy this directory's `dist`,
+not the parent directory's output.
 
-## What this is
+1. Complete [backend setup](../../../deploy/AUTH.md): PostgreSQL migration,
+   production settings, Auth0 API audience, and signed admission claims.
+2. Copy `.env.example` to `.env.local` and configure the public Auth0 domain,
+   SPA client ID, and audience. Keep `VITE_API_BASE` empty for same-origin hosting
+   and both fixture/anonymous flags false. Rebuild when these settings change.
+3. Run `npm ci`, `npm test`, and `npm run build` in this directory.
+4. Deploy `dist/` to `/var/www/tardiscreen`, retaining the previous build for rollback.
+5. Use [the React Caddy template](../../../deploy/Caddyfile.react.template) with
+   the HTTPS domain. It proxies `/me`, `/score`, `/health`, and `/ready` before
+   the SPA fallback. Validate Caddy configuration before reloading.
 
-A React frontend for AnHydra, replacing the inline `PAGE` string in
-`app/main.py`. It calls the **existing** `POST /score` and `GET /health` with
-no backend changes required — the response type in `src/types.ts` mirrors
-`ScoreResponse` field for field.
+The backend stays under systemd; production assets need no Node server. The legacy
+FastAPI HTML page has no Auth0 login, so Caddy must serve the React build at `/`.
+Register the exact origin in Auth0 callbacks, logout URLs, and web origins.
+For separate hosting, set `VITE_API_BASE` and exact backend `CORS_ORIGINS`.
+Never send API tokens over public HTTP or use wildcard CORS.
 
-## What changes on the server
+Check `/health` for liveness and `/ready` for model readiness. Complete real provider
+sign-in, confirm `/me` returns JSON rather than SPA HTML, then score a known input.
+Check 401/403/503 states. `scripts/check_site.sh` accepts a protected temporary
+`AUTH_HEADER_FILE`, documented in the backend guide.
 
-Nothing in `src/tardiscreen/`. Only what serves HTML at `/`.
+Vite's development proxy does not run in `vite preview` or a production static
+server. Use Caddy for same-origin API routing; preview alone cannot reach `/me`
+and `/score` unless `VITE_API_BASE` was set when building.
 
-### Build (on a laptop, not the server)
-
-```bash
-npm install
-npm run build          # emits dist/ — plain static files, no Node needed to serve
-```
-
-### Option A — Caddy serves the build (recommended)
-
-Keeps the frontend and the API independent: a UI deploy cannot break scoring.
-
-```
-64.177.42.245 {
-    handle /score* {
-        reverse_proxy localhost:8000
-    }
-    handle /health* {
-        reverse_proxy localhost:8000
-    }
-    handle {
-        root * /var/www/tardiscreen
-        try_files {path} /index.html
-        file_server
-    }
-}
-```
-
-```bash
-ssh root@64.177.42.245 'mkdir -p /var/www/tardiscreen'
-scp -r dist/* root@64.177.42.245:/var/www/tardiscreen/
-ssh root@64.177.42.245 'systemctl reload caddy'
-```
-
-`app/main.py`'s `index()` route then just stops being reached. Leave it in
-place as a fallback, or delete it in a separate commit.
-
-### Option B — FastAPI serves the build
-
-One process, but `git pull` on the server now has to carry built assets.
-
-```python
-from pathlib import Path
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
-
-DIST = Path(__file__).resolve().parent.parent / "dist"
-if DIST.is_dir():
-    app.mount("/assets", StaticFiles(directory=DIST / "assets"), name="assets")
-
-    @app.get("/{full_path:path}")
-    def spa(full_path: str) -> FileResponse:
-        return FileResponse(DIST / "index.html")
-```
-
-This must go **after** `/score` and `/health` are registered, or the catch-all
-swallows them. Add `dist/` to the deploy step; it is gitignored by default here.
-
-### Stage it first
-
-Deploy to a second path before replacing `/`, so the working demo survives a
-mistake:
-
-```
-handle /v2* {
-    uri strip_prefix /v2
-    root * /var/www/tardiscreen-v2
-    try_files {path} /index.html
-    file_server
-}
-```
-
-## The blocker, as of 2026-10-17 11:30 ET
-
-`POST /score` on the live box returns **503**:
-
-```
-Model not trained yet — run `python -m tardiscreen.model` to write
-data/models.joblib, then reload.
-```
-
-`docs/STATUS.md` records `data/models.joblib` as existing and working on the
-server, so this is a discrepancy worth chasing before anything else. The
-likely cause is that `data/` is gitignored, so a deploy from a fresh clone
-brings no `models.joblib` — it has to be copied up or regenerated on the box.
-Note that `docs/STATUS.md` also says nobody but the data owner runs the
-dataset scripts on the server, so regenerating is the data owner's call, not a
-deploy step.
-
-Until that is fixed, this UI will correctly show the 503 as an error and no
-score — by design, matching the backend's rule that a fabricated number is
-worse than no number.
-
-## One small backend request (optional, 3 lines)
-
-`explain()` returns either the Gemini readout or the offline template, and the
-response doesn't say which. Adding the source to `ScoreResponse` lets the UI
-label it honestly instead of generically:
-
-```python
-class ScoreResponse(BaseModel):
-    ...
-    explanation_source: Literal["gemini", "template"] = "template"
-```
-
-`explain()` already knows which path it took. Not a blocker; the UI just says
-"generated from the feature contributions" without it.
+Actual tenant logins and production deployment have not been performed by local
+integration checks. Keep the previous Caddy configuration and build for rollback.

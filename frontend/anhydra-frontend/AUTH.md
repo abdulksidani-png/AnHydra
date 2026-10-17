@@ -1,146 +1,101 @@
-# Frontend authentication
+# Frontend and backend authentication
 
-Implements the React side of the auth design: Auth0 Universal Login,
-Authorization Code + PKCE, and an access token for the AnHydra API audience
-sent as `Authorization: Bearer <token>` on `/me` and `/score`.
+This app connects to FastAPI in this repository. Auth0 Universal Login completes
+Authorization Code + PKCE, then `GET /me` resolves the application account before
+the screener appears. `/me` and `/score` use one bearer-token provider and API
+origin. `/health` is public.
 
-## It does not work without the backend
+## Matching configuration
 
-`GET /me` does not exist in `app/main.py` yet. Until the backend counterpart
-ships, a fully configured build authenticates with Auth0 and then stops at
-"Temporarily unavailable", because `/me` returns 404.
-
-That is the intended failure: the app will not show the screener to someone it
-cannot confirm an account for. There is no client-side bypass, by design.
-
-## Environment settings
-
-All are build-time and public. **Never put a client secret or a Management API
-credential in a `VITE_` variable** — the bundle is readable by anyone.
-
-| Variable | Required | Notes |
-| --- | --- | --- |
-| `VITE_AUTH0_DOMAIN` | yes | Tenant domain, e.g. `anhydra.us.auth0.com` |
-| `VITE_AUTH0_CLIENT_ID` | yes | SPA client ID |
-| `VITE_AUTH0_AUDIENCE` | yes | API identifier; must match the backend's |
-| `VITE_AUTH0_DB_CONNECTION` | no | Default `Username-Password-Authentication` |
-| `VITE_AUTH0_MICROSOFT_CONNECTION` | no | Exact tenant connection name; unset hides the button |
-| `VITE_AUTH0_ALLOW_ANONYMOUS` | no | `true` runs with no sign-in — **development builds only** |
-
-**Partial configuration is a startup failure.** If some but not all of the
-three required values are set, the app renders a configuration-error screen
-listing what is missing and refuses to run. It does not fall back to an open
-screener — that silent downgrade is the thing this check exists to prevent.
-
-`VITE_AUTH0_ALLOW_ANONYMOUS` is honoured only when `import.meta.env.DEV` is
-true. `npm run build` sets it false, so the bypass cannot reach production even
-if the variable is set in the build environment.
-
-## Auth0 dashboard setup — required before any of this works
-
-In the tenant, for this SPA application:
-
-1. **Application type:** Single Page Application.
-2. **Allowed Callback URLs**, **Allowed Logout URLs**, **Allowed Web Origins**:
-   the exact origins the app is served from, with no trailing slash:
-   - `https://anhydra.work`
-   - `http://localhost:5173` for development
-3. **APIs → create an API** whose identifier is the value used for
-   `VITE_AUTH0_AUDIENCE`. The backend validates tokens against the same
-   identifier and the tenant's issuer.
-4. **Connections → Social → Google**: enable `google-oauth2` for this
-   application, with Google OAuth credentials configured.
-5. **Connections → Database**: enable the database connection for this
-   application if email sign-in is wanted.
-6. **Microsoft:** create the connection, then put its exact name in
-   `VITE_AUTH0_MICROSOFT_CONNECTION`. Do not assume one Microsoft social
-   connection covers university accounts — which account types work depends on
-   how the connection was created. If it is unset the button is omitted.
-
-Refresh tokens are **not** used (see below), so no rotation policy is needed.
-
-## Token storage
-
-The SDK's default in-memory cache. `cacheLocation="localstorage"` and
-`useRefreshTokens` were removed deliberately: a token in localStorage is
-readable by any script that reaches the page and outlives the tab, which is a
-large blast radius for a screening tool.
-
-What it costs: **a full page reload drops the cached token**, and the SDK
-silently re-authenticates via a hidden iframe against the Auth0 session cookie.
-That works in Chrome and Firefox. In Safari, and in browsers blocking
-third-party cookies, the silent call fails and the sign-in page appears again —
-one click, because the Auth0 session is still valid.
-
-To change that trade: enable refresh-token rotation in the dashboard, then set
-`useRefreshTokens` and `useRefreshTokensFallback={false}` in `src/main.tsx`.
-Rotation must be configured on the tenant for this to be safe.
-
-Tokens are never written to React state, browser storage, analytics or logs.
-Only the finished `Authorization` header leaves `src/auth/token.ts`.
-
-## States
-
-| Condition | What the person sees |
+| Frontend setting | Backend counterpart / meaning |
 | --- | --- |
-| Config incomplete | Configuration error, listing missing variables |
-| Not signed in | Sign-in page with the configured providers |
-| Auth0 loading | "Checking your session…" |
-| Resolving `/me` | "Loading your account…" |
-| `/me` 401 | Session expired, with one explicit "Sign in again" button |
-| `/me` 403 | Access denied, with sign-out |
-| `/me` 503 / network / 5xx | Temporarily unavailable, with retry and sign-out |
-| `/score` 401 | Error banner: session expired, with sign-in |
-| `/score` 403 | Error banner: account not allowed |
+| `VITE_AUTH0_DOMAIN` | `AUTH0_ISSUER=https://<domain>/` |
+| `VITE_AUTH0_CLIENT_ID` | Auth0 SPA application ID, never the API audience |
+| `VITE_AUTH0_AUDIENCE` | Exactly `AUTH0_AUDIENCE`, the registered API identifier |
+| `VITE_API_BASE` | Empty for same-origin hosting/Vite proxy; otherwise the API HTTPS origin |
+| `VITE_PROXY_TARGET` | Development backend, default `http://127.0.0.1:8000` |
+| `VITE_AUTH0_DB_CONNECTION` | Default `Username-Password-Authentication` |
+| `VITE_AUTH0_MICROSOFT_CONNECTION` | Exact configured connection name; empty hides the button |
 
-No state redirects automatically. A 503 in particular never triggers a login
-attempt — that would be a redirect loop against a service that is merely down.
+All VITE values are public. Never include provider/client secrets, database
+credentials, or Management API credentials. Actual tenant settings have not been
+supplied for this integration.
 
-## Identity and stale responses
+Production builds reject missing domain/client ID/audience, anonymous mode, and
+fixture scores. Runtime also refuses partial configuration. Anonymous local use
+requires all three Auth0 fields empty and `VITE_AUTH0_ALLOW_ANONYMOUS=true`.
+The backend independently requires `APP_ENV=development` and
+`AUTH_DEV_ANONYMOUS=true`. Frontend settings cannot disable backend authentication.
+`VITE_USE_MOCK=true` supplies scoring fixtures only in development; it never
+replaces a failed API request automatically.
 
-`src/auth/token.ts` keeps an epoch that increments on every provider install
-and clear. A token acquired under an old epoch is refused, and `useAccount`
-discards any `/me` response whose identity or epoch no longer matches. The
-screener is keyed on the account id, so changing identity throws away every
-user-scoped piece of state, including a result on screen.
+## Auth0 tenant requirements
 
-Requests cannot race ahead of the provider: when auth is required and no
-provider is installed, the request fails with a transient "still signing you
-in" rather than going out unauthenticated and coming back 401.
+Register an RS256 API with the shared audience and a Single Page Application.
+Configure exact callback/logout URLs and web origins, including
+`http://localhost:5173` for local testing and the actual production HTTPS origin.
+Enable Google and intended database/Microsoft connections for the SPA. Microsoft
+personal and school accounts may require different connections.
 
-## Admission policy
+The backend already enforces admission. With
+`AUTH0_CLAIM_NAMESPACE=https://anhydra.work/claims/`, a trusted Auth0 Post Login
+Action must issue these signed **API access-token-only** claims:
 
-The UI makes no claim about who is eligible. The previous sign-in copy
-promised `.edu` enforcement and said the backend checked it on every `/score`
-call; neither was true, and both are removed. **Signing in successfully does
-not mean admitted** — the backend decides, and a refused account gets the
-access-denied screen.
+| Claim | Value |
+| --- | --- |
+| `https://anhydra.work/claims/token_kind` | `user_access` for an end-user flow |
+| `https://anhydra.work/claims/admission` | `google` or `verified_edu` |
 
-If an admission rule is added, update the backend first, then the copy.
+Google admission requires an administrator-allowlisted Google connection.
+`verified_edu` requires both verified `.edu` contact and independently confirmed
+institutional membership. Email suffix alone, subject prefixes, and user-editable
+metadata are insufficient. Never issue these claims in ID tokens or machine
+credentials. Missing token-kind gives 401; absent admission gives 403.
+Microsoft has no blanket admission; a school identity can qualify through the
+same authoritative institutional policy. The frontend never creates these claims.
 
-## Validation status
+[Backend operations](../../../deploy/AUTH.md) defines the authoritative policy,
+PostgreSQL migrations, TLS, credentials, and deployment controls.
 
-Honest accounting, since a build passing is not evidence of login working:
+## State and storage
 
-- **Not exercised against Auth0.** No tenant was available, so no provider
-  flow — Google, Microsoft or database — has been run end to end.
-- **Not exercised against `/me`.** The endpoint does not exist yet.
-- **Not typechecked or built here.** This was written in an environment with no
-  npm access. Run `npm install && npm run build` before trusting it.
+The Auth0 SDK uses an in-memory cache. Refresh tokens are not enabled. Reload may
+require another redirect if silent session renewal is unavailable in the browser.
+Tokens are never persisted in localStorage or application user records.
 
-What is verifiable by reading: the config gate, the state machine, the epoch
-guards, and the absence of token persistence.
+`/me` returns the internal UUID, nullable name/email, email verification flag, and
+creation time. Null profiles display as "Signed in". A 401 offers explicit sign-in,
+403 shows access denied, and 503 offers retry without a login loop. Scoring 503
+can mean database, identity-key, model, or inference unavailability.
 
-## Handoff to the backend implementer
+Account state is tied to both subject and token-provider generation. Identity
+changes hide the old profile immediately. Logout clears the provider and account
+gate; late account, token, or score responses cannot restore an old session.
+The screener unmounts on account changes, clearing user-scoped results.
+No account linking or email-based merging is implemented.
 
-- API audience: the value of `VITE_AUTH0_AUDIENCE` (agree one and use it on
-  both sides).
-- Issuer/domain: `https://<VITE_AUTH0_DOMAIN>/`.
-- Public origins: `https://anhydra.work`, plus `http://localhost:5173`.
-- Admission policy: **unspecified** — currently every authenticated account is
-  treated as admitted unless `/me` returns 403. Decide this deliberately.
-- `GET /me` must return the documented shape with a UUID `id`, nullable
-  `display_name`/`email`, boolean `email_verified`, and `created_at`; and use
-  `{"detail": "..."}` for errors, with 401/403/503 distinguished.
+## Validation
 
-Account linking is out of scope. Do not merge profiles by email.
+Run `npm test` and `npm run build` in this directory. Supply all three public
+Auth0 settings for the production build; CI placeholders test compilation only.
+
+After installing frontend and Python dependencies, run from the repository root:
+
+```sh
+# TEST_DATABASE_URL must identify a disposable PostgreSQL database.
+python -m pytest -q tests/test_frontend_integration.py
+```
+
+This executes the actual TypeScript clients through Vite into production FastAPI
+route handlers with real PostgreSQL storage. It checks first/repeat `/me`, signed
+bearer validation, `/score`, expired tokens, ineligible/disabled users, and public
+health. It uses controlled RSA keys and a stubbed prediction, not real Auth0
+redirects or ML inference. CI runs it with PostgreSQL.
+
+Google, hosted email, and supported Microsoft logins still require tenant testing.
+A successful build and local integration do not establish provider integration.
+
+Local validation on 2026-10-17: 11 frontend tests passed; typecheck and production
+build passed with placeholder public auth settings; npm audit reported no known
+vulnerabilities. All 107 Python tests passed with PostgreSQL 16.14, including the
+frontend HTTP integration test. No production deployment was performed.

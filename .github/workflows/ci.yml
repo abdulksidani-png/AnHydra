@@ -29,21 +29,35 @@ jobs:
           python-version: ${{ matrix.python }}
           cache: pip
       - run: python -m pip install -e '.[dev]'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/anhydra-frontend/package-lock.json
+      - run: npm ci --prefix frontend/anhydra-frontend
       - run: python -m pytest -q
       - run: bash -n scripts/check_site.sh scripts/collect_results.sh
   frontend:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
+    strategy:
+      matrix:
+        directory: [frontend, frontend/anhydra-frontend]
+    env:
+      VITE_AUTH0_DOMAIN: integration.invalid
+      VITE_AUTH0_CLIENT_ID: ci-placeholder
+      VITE_AUTH0_AUDIENCE: integration-api
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: ${{ matrix.directory }}/package-lock.json
       - run: npm ci
+        working-directory: ${{ matrix.directory }}
       - run: npm test
+        working-directory: ${{ matrix.directory }}
       - run: npm run build
+        working-directory: ${{ matrix.directory }}
       - run: npm audit --audit-level=moderate
+        working-directory: ${{ matrix.directory }}

@@ -10,13 +10,15 @@ import { tokenEpoch } from '../auth/token';
 export type AccountStatus = 'idle' | 'loading' | 'ready' | 'error';
 
 interface AccountState {
+  identity: string | null;
+  epoch: number | null;
   status: AccountStatus;
   profile: AccountProfile | null;
   errorKind: AccountFailureKind | null;
   error: string | null;
 }
 
-const IDLE: AccountState = { status: 'idle', profile: null, errorKind: null, error: null };
+const IDLE: AccountState = { identity: null, epoch: null, status: 'idle', profile: null, errorKind: null, error: null };
 
 /**
  * Resolves the application account after Auth0 has authenticated someone.
@@ -26,10 +28,10 @@ const IDLE: AccountState = { status: 'idle', profile: null, errorKind: null, err
  * in flight, so a late response for the previous person can never populate the
  * new session.
  *
- * `enabled` gates the first fetch on the token provider actually being
- * installed, which keeps /me from racing ahead of it.
+ * `providerEpoch` gates requests on the installed provider and restarts
+ * resolution when it changes, including for the same subject.
  */
-export function useAccount(identity: string | null, enabled: boolean) {
+export function useAccount(identity: string | null, providerEpoch: number | null) {
   const [state, setState] = useState<AccountState>(IDLE);
   const runId = useRef(0);
   const activeIdentity = useRef<string | null>(null);
@@ -37,18 +39,20 @@ export function useAccount(identity: string | null, enabled: boolean) {
   const load = useCallback(async (who: string | null) => {
     const id = ++runId.current;
     const epochAtStart = tokenEpoch();
-    setState((prev) => ({ ...prev, status: 'loading', error: null, errorKind: null }));
+    setState({ ...IDLE, identity: who, epoch: epochAtStart, status: 'loading' });
 
     try {
       const { profile, epoch } = await fetchAccount();
       // Three guards: a newer run started, the identity changed, or the token
       // provider was swapped underneath us.
-      if (id !== runId.current || activeIdentity.current !== who || epoch !== epochAtStart) return;
-      setState({ status: 'ready', profile, errorKind: null, error: null });
+      if (id !== runId.current || activeIdentity.current !== who || epoch !== tokenEpoch()) return;
+      setState({ identity: who, epoch, status: 'ready', profile, errorKind: null, error: null });
     } catch (error) {
-      if (id !== runId.current || activeIdentity.current !== who) return;
+      if (id !== runId.current || activeIdentity.current !== who || epochAtStart !== tokenEpoch()) return;
       const known = error instanceof AccountError;
       setState({
+        identity: who,
+        epoch: epochAtStart,
         status: 'error',
         profile: null,
         errorKind: known ? error.kind : 'failed',
@@ -62,18 +66,20 @@ export function useAccount(identity: string | null, enabled: boolean) {
     // Any identity change invalidates in-flight work and wipes user state.
     runId.current += 1;
 
-    if (!identity || !enabled) {
+    if (!identity || providerEpoch === null) {
       setState(IDLE);
-      return;
+    } else {
+      void load(identity);
     }
-
-    setState({ status: 'loading', profile: null, errorKind: null, error: null });
-    void load(identity);
-  }, [identity, enabled, load]);
+    return () => { runId.current += 1; activeIdentity.current = null; };
+  }, [identity, providerEpoch, load]);
 
   const retry = useCallback(() => {
-    if (activeIdentity.current) void load(activeIdentity.current);
-  }, [load]);
+    if (identity && providerEpoch !== null && providerEpoch === tokenEpoch()) void load(identity);
+  }, [identity, providerEpoch, load]);
 
-  return { ...state, retry };
+  // Hide a previous account during render, before effect cleanup gets a turn.
+  const current = identity && state.identity === identity && state.epoch === providerEpoch
+    && providerEpoch === tokenEpoch();
+  return { ...(current ? state : IDLE), retry };
 }

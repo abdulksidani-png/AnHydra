@@ -79,25 +79,24 @@ function AuthGate() {
 
   const settings = authState.kind === 'configured' ? authState.settings : null;
   const identity = isAuthenticated ? (user?.sub ?? null) : null;
-  const [providerReady, setProviderReady] = useState(false);
+  const [providerSession, setProviderSession] = useState<{ identity: string; epoch: number } | null>(null);
 
   // Install the token provider for this identity, and tear it down on sign-out
   // or identity change so nothing can keep using the old one.
   useEffect(() => {
     if (!identity) {
       clearAccessTokenProvider();
-      setProviderReady(false);
+      setProviderSession(null);
       return;
     }
-    setAccessTokenProvider(() => getAccessTokenSilently(), identity);
-    setProviderReady(true);
+    const epoch = setAccessTokenProvider(() => getAccessTokenSilently(), identity);
+    setProviderSession({ identity, epoch });
     return () => {
       clearAccessTokenProvider();
-      setProviderReady(false);
     };
   }, [identity, getAccessTokenSilently]);
 
-  const account = useAccount(identity, providerReady);
+  const account = useAccount(identity, providerSession?.identity === identity ? providerSession.epoch : null);
 
   const signIn = useCallback(
     (connection?: string, signup = false) =>
@@ -112,6 +111,7 @@ function AuthGate() {
 
   const signOut = useCallback(() => {
     clearAccessTokenProvider();
+    setProviderSession(null);
     void logout({ logoutParams: { returnTo: window.location.origin } });
   }, [logout]);
 

@@ -1,4 +1,5 @@
 import { TokenError, authorizationHeaders, tokenEpoch } from './token';
+import { API_BASE } from '../api/config';
 
 /**
  * The application account, from `GET /me`.
@@ -38,7 +39,6 @@ export class AccountError extends Error {
   }
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? '';
 const TIMEOUT_MS = 15_000;
 
 /**
@@ -86,6 +86,7 @@ export async function fetchAccount(): Promise<{ profile: AccountProfile; epoch: 
     } catch {
       throw new AccountError('failed', 'The server sent a response we could not read.');
     }
+    if (epoch !== tokenEpoch()) throw new AccountError('failed', 'Your session changed. Try again.');
     return { profile: normalize(body), epoch };
   }
 
