@@ -90,14 +90,14 @@ def test_inner_cnn_split_is_disjoint_and_has_both_classes():
         _split_val(np.arange(2), np.array(["a", "b"]), np.random.default_rng(42), np.array([0, 1]))
 
 
-def test_api_rejects_silent_encoder_truncation():
+def test_api_rejects_silent_encoder_truncation(authorized_app):
     assert len(parse_sequence("A" * 1022)) == 1022
     response = TestClient(app).post("/score", json={"sequence": "A" * 1023})
     assert response.status_code == 400
     assert "1022" in response.json()["detail"]
 
 
-def test_unusable_model_returns_actionable_503(tmp_path):
+def test_unusable_model_returns_actionable_503(tmp_path, authorized_app):
     artifact = tmp_path / "models.joblib"
     artifact.write_bytes(b"invalid")
     with patch("app.main.MODELS_PATH", artifact), patch("app.main.predict", side_effect=ValueError("private detail")):

@@ -1,6 +1,8 @@
 # User storage and Auth0 design
 
-Status: proposed architecture; this document does not enable authentication or create a database.
+Status: backend authentication and PostgreSQL migrations are implemented. Deployment
+still requires migration execution and Auth0 tenant configuration; see
+[backend operations](../deploy/AUTH.md). Provider integration is not yet verified.
 
 ## Credential boundary
 
@@ -78,7 +80,7 @@ Use HTTPS, a restrictive CSP, minimal third-party scripts, rate limits on expens
 
 ## Current repository gaps and implementation order
 
-1. `frontend/src/auth/config.ts` and `frontend/src/main.tsx` already configure Auth0, and `frontend/src/api/client.ts` sends access tokens. `app/main.py` does not validate them. The comment in `frontend/src/components/SignIn.tsx` claiming backend enforcement is ahead of the implementation.
+1. `frontend/src/auth/config.ts` and `frontend/src/main.tsx` configure Auth0, and `frontend/src/api/client.ts` sends access tokens. The backend now validates API tokens and signed end-user/admission claims, resolves PostgreSQL users, and protects `/me` and `/score`. Frontend lifecycle work remains described separately in `AUTH_FRONTEND_INSTRUCTIONS.md`.
 2. Register the API audience and configure backend validation; add meaningful rejection tests before protecting `/score`.
 3. Add PostgreSQL migrations, transactional provisioning, local status checks, and `/me`.
 4. Configure Google and the required Microsoft account types in Auth0, then update the login chooser and admission copy.

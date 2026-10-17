@@ -2,7 +2,7 @@
 # /var/www/tardiscreen before switching from the FastAPI-only configuration.
 @@DOMAIN@@ {
     encode zstd gzip
-    @api path /score /health /ready /docs /docs/* /redoc /openapi.json
+    @api path /me /score /health /ready /docs /docs/* /redoc /openapi.json
     handle @api {
         reverse_proxy 127.0.0.1:8000
     }

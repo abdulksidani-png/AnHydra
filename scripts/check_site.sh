@@ -10,6 +10,12 @@
 
 set -uo pipefail
 BASE="${1:-https://anhydra.work}"
+# Optional mode-0600 file containing Authorization: Bearer <API access token>.
+# curl reads it directly, keeping the credential out of process arguments.
+auth_args=()
+if [[ -n "${AUTH_HEADER_FILE:-}" ]]; then
+  auth_args=(-H "@$AUTH_HEADER_FILE")
+fi
 # Gly/Ser-rich toy: should score high. Known-good input, so a low score means something changed.
 SEQ="MSGSGSGKEKEKDKDKGSGSGSHGHGSGSEKEKDKDKGSGSGSGHKGHGSGSEKEKDKDK"
 fail=0
@@ -53,11 +59,12 @@ fi
 say
 say "Scoring a known Gly/Ser-rich sequence (first request may take ~15s while ESM-2 loads)"
 body=$(curl -fsS --max-time 120 -X POST "$BASE/score" \
+         "${auth_args[@]}" \
          -H 'content-type: application/json' \
          -d "{\"sequence\":\"$SEQ\"}" 2>/dev/null)
 
 if [[ -z "$body" ]]; then
-  bad "/score returned nothing"
+  bad "/score failed; check AUTH_HEADER_FILE for an eligible API token and service readiness"
   say
   say "On the server:  journalctl -u tardiscreen -n 40 --no-pager"
   exit 1

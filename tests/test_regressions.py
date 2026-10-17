@@ -27,7 +27,7 @@ def test_invalid_input_is_not_silently_changed(raw):
     assert exc.value.status_code == 400
 
 
-def test_api_without_model(tmp_path):
+def test_api_without_model(tmp_path, authorized_app):
     with patch("app.main.MODELS_PATH", tmp_path / "missing"):
         client = TestClient(app)
         assert client.get("/").status_code == 200

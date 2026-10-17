@@ -5,6 +5,20 @@ permissions:
 jobs:
   python:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: auth_test
+          POSTGRES_PASSWORD: isolated_ci_only
+          POSTGRES_DB: auth_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U auth_test -d auth_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg://auth_test:isolated_ci_only@localhost:5432/auth_test
     strategy:
       matrix:
         python: ['3.10', '3.12']

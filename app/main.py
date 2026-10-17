@@ -14,22 +14,80 @@ from __future__ import annotations
 
 from pathlib import Path
 import logging
+from contextlib import asynccontextmanager
+from datetime import datetime
+from uuid import UUID
 
-from fastapi import FastAPI, HTTPException
+import httpx
+from fastapi import Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from tardiscreen.explain import explain
 from tardiscreen.features import AA, clean_sequence, compute_features
 from tardiscreen.model import MODELS_PATH, predict, load_bundle
+from app.auth import KeyCache, TokenVerifier, authenticated_user
+from app.database import UserStore, database_engine
+from app.logging_safety import install_redaction
+from app.settings import Settings
 
 PAGE_PATH = Path(__file__).resolve().parent / "static" / "index.html"
 
 MIN_LENGTH = 20          # below this, composition/disorder signals are meaningless
 MAX_LENGTH = 1022        # ESM-2 token budget: 1024 minus BOS/EOS; never silently truncate
 
-app = FastAPI(title="AnHydra",
+@asynccontextmanager
+async def lifespan(application):
+    install_redaction()
+    settings = Settings.from_env()
+    application.state.settings = settings
+    engine = None
+    with httpx.Client(timeout=5, follow_redirects=False, trust_env=False) as client:
+        if not settings.anonymous:
+            engine = database_engine(settings.database_url)
+            application.state.users = UserStore(engine)
+            application.state.verifier = TokenVerifier(settings, KeyCache(settings.issuer, client))
+        try:
+            yield
+        finally:
+            if engine is not None:
+                engine.dispose()
+
+
+class ConfiguredCORS:
+    """Read validated startup origins without validating secrets during module import."""
+    def __init__(self, app):
+        self.app = app
+        self.middleware = None
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            settings = getattr(scope["app"].state, "settings", None)
+            if settings is not None:
+                if self.middleware is None:
+                    self.middleware = CORSMiddleware(self.app, allow_origins=list(settings.cors_origins),
+                        allow_methods=["GET", "POST"], allow_headers=["Authorization", "Content-Type"])
+                return await self.middleware(scope, receive, send)
+        return await self.app(scope, receive, send)
+
+
+app = FastAPI(title="AnHydra", lifespan=lifespan,
               description="Score a protein sequence for desiccation-protective family character.")
+app.add_middleware(ConfiguredCORS)
+
+
+class UserResponse(BaseModel):
+    id: UUID
+    display_name: str | None
+    email: str | None
+    email_verified: bool
+    created_at: datetime
+
+
+@app.get("/me", response_model=UserResponse)
+def me(user=Depends(authenticated_user)):
+    return user
 
 
 class ScoreRequest(BaseModel):
@@ -72,7 +130,7 @@ def parse_sequence(raw: str) -> str:
 
 
 @app.post("/score", response_model=ScoreResponse)
-def score(req: ScoreRequest) -> ScoreResponse:
+def score(req: ScoreRequest, user=Depends(authenticated_user)) -> ScoreResponse:
     """Score one sequence with the trained ESM-2 model."""
     seq = parse_sequence(req.sequence)
     if not MODELS_PATH.exists():

@@ -1,8 +1,12 @@
 # TardiScreen deployment
 
+Follow [AUTH.md](AUTH.md) before rollout: configure Auth0 signed admission claims,
+provision PostgreSQL, run migrations, and inject production settings. `/score` and
+`/me` require eligible users' API access tokens; `/health` stays public.
+
 Release validation and deployment gates are in [RELEASE.md](../docs/RELEASE.md).
 The restored React frontend is optional: use `Caddyfile.react.template` when
-serving its build, and proxy `/ready` alongside `/score` and `/health`.
+serving its build, and proxy `/me` and `/ready` alongside `/score` and `/health`.
 The existing `Caddyfile.template` and `Caddyfile.anhydra` serve the FastAPI page.
 Do not replace a live React site's configuration with the FastAPI-only variant
 unless deliberately switching interfaces.
