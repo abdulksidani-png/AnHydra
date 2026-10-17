@@ -1,4 +1,4 @@
-# Optional React deployment. Build frontend/dist and copy its contents to
+# React deployment for frontend-auth. Build frontend/anhydra-frontend/dist and copy its contents to
 # /var/www/tardiscreen before switching from the FastAPI-only configuration.
 @@DOMAIN@@ {
     encode zstd gzip

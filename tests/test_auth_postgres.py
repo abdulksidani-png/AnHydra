@@ -4,42 +4,15 @@ TEST_DATABASE_URL must point to a disposable database with schema-create rights.
 Each test gets a unique schema; no existing tables are touched.
 """
 from concurrent.futures import ThreadPoolExecutor
-import os
 import threading
-from uuid import uuid4
 
-from alembic import command
-from alembic.config import Config
 from fastapi import HTTPException
 import pytest
 from sqlalchemy import event, text
 
-from app.database import UserStore, database_engine
+from app.database import UserStore
 
 
-@pytest.fixture
-def database(monkeypatch):
-    url = os.getenv("TEST_DATABASE_URL")
-    if not url:
-        pytest.skip("TEST_DATABASE_URL is required for real PostgreSQL tests")
-    schema = "auth_test_" + uuid4().hex
-    admin = database_engine(url)
-    with admin.begin() as conn:
-        conn.execute(text(f'CREATE SCHEMA "{schema}"'))
-    from sqlalchemy.engine import make_url
-    isolated = make_url(url).update_query_dict({"options": f"-c search_path={schema}"})
-    # database_engine sets bounded timeouts while preserving the requested test schema.
-    isolated_url = isolated.render_as_string(hide_password=False)
-    monkeypatch.setenv("DATABASE_URL", isolated_url)
-    engine = database_engine(isolated_url)
-    try:
-        command.upgrade(Config("alembic.ini"), "head")
-        yield engine
-    finally:
-        engine.dispose()
-        with admin.begin() as conn:
-            conn.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
-        admin.dispose()
 
 
 def test_first_repeat_exact_identity_and_nullable_profile(database):
