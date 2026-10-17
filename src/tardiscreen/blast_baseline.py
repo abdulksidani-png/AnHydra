@@ -84,8 +84,20 @@ def score_from_hits(hits: dict[str, list[tuple[str, float]]], query_ids: list[st
     return scores
 
 
-def _blast_fold(train_ids, train_seqs, train_y, test_ids, test_seqs) -> np.ndarray:
-    """Database from the training fold, query the test fold, return per-query scores."""
+def max_bitscore(hits: dict[str, list[tuple[str, float]]], query_ids: list[str]) -> np.ndarray:
+    """Best bitscore to ANY training sequence — how much alignment signal exists for this query.
+
+    This is the axis that separates close homologs from remote ones, independent of which class the
+    hit belongs to.
+    """
+    return np.array([max((b for _, b in hits.get(q, [])), default=0.0) for q in query_ids])
+
+
+def _blast_fold(train_ids, train_seqs, train_y, test_ids, test_seqs, *, with_bits: bool = False):
+    """Database from the training fold, query the test fold, return per-query scores.
+
+    With `with_bits`, also returns each query's best bitscore to any training sequence.
+    """
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
         db_fasta, q_fasta = tmp / "train.fasta", tmp / "test.fasta"
@@ -101,7 +113,9 @@ def _blast_fold(train_ids, train_seqs, train_y, test_ids, test_seqs) -> np.ndarr
             check=True, capture_output=True, text=True)
 
     positives = {sid for sid, lab in zip(train_ids, train_y) if lab == 1}
-    return score_from_hits(parse_hits(proc.stdout), list(test_ids), positives)
+    hits = parse_hits(proc.stdout)
+    scores = score_from_hits(hits, list(test_ids), positives)
+    return (scores, max_bitscore(hits, list(test_ids))) if with_bits else scores
 
 
 def blast_cv(sub, y, groups):
