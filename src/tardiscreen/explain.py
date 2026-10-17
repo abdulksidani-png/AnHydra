@@ -12,7 +12,21 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+def _load_env_file() -> None:
+    """Read the checkout's .env, if this process is allowed to.
+
+    Under systemd the unit already loads the same file as root via EnvironmentFile and injects the
+    variables, while the service itself runs as an unprivileged dynamic user that cannot read a
+    0600 root-owned file. Treating that as fatal takes the whole app down for a file whose contents
+    are already in the environment — so a missing or unreadable .env is not an error here.
+    """
+    try:
+        load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+    except OSError as exc:            # unreadable, a directory, a broken mount
+        print(f"[explain] .env not read ({exc.__class__.__name__}); using the process environment.")
+
+
+_load_env_file()
 
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
