@@ -73,7 +73,12 @@ def train(dataset_csv: Path | None = None):
 
     df = pd.read_csv(ds, dtype=str).fillna("")
     z = np.load(npz, allow_pickle=False)
-    emb = {sid: z["X"][i] for i, sid in enumerate(z["ids"].astype(str))}
+    # Bind the arrays before the comprehension. np.load on a .npz is lazy, so `z["X"][i]` inside
+    # the loop re-reads and decompresses the WHOLE array on every iteration — 3151 full copies,
+    # which the OOM killer ends. evaluate.py already does it this way.
+    ids = z["ids"].astype(str)
+    X = z["X"]
+    emb = {sid: X[i] for i, sid in enumerate(ids)}
     df = df[df["sequence_id"].isin(emb)].reset_index(drop=True)
 
     y = (df["label"] == POSITIVE).astype(int).to_numpy()
