@@ -2,6 +2,7 @@
 torch>=2.2
 transformers>=4.40          # ESM-2 via facebook/esm2_*
 scikit-learn>=1.4           # classifier heads, GroupKFold, metrics, calibration
+tqdm>=4.66                 # progress bar for embedding
 numpy>=1.26
 pandas>=2.2
 

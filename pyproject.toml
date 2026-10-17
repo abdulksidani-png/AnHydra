@@ -25,6 +25,7 @@ ml = [
     "torch>=2.2",
     "transformers>=4.40",
     "scikit-learn>=1.4",
+    "tqdm>=4.66",
 ]
 
 [build-system]
