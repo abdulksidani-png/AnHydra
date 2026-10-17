@@ -49,6 +49,8 @@ export interface ScoreResponse {
 export interface HealthResponse {
   status: string;
   model_trained: boolean;
+  /** True when the server requires an Auth0 sign-in for /score. */
+  auth_required?: boolean;
 }
 
 export type ScreenErrorKind =
@@ -59,7 +61,9 @@ export type ScreenErrorKind =
   /** Couldn't reach the backend at all. */
   | 'network'
   /** 5xx other than 503. */
-  | 'server';
+  | 'server'
+  /** 401/403 — not signed in, session expired, or account not allowed. */
+  | 'auth';
 
 export class ScreenError extends Error {
   constructor(

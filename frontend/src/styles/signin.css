@@ -1,0 +1,132 @@
+/* ========== Sign-in ========== */
+
+.signin {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 32px 16px;
+}
+
+.signin__card {
+  width: 100%;
+  max-width: 440px;
+  padding: 32px 28px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-md);
+}
+
+.signin__brand {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--gap-md);
+  padding-bottom: var(--gap-md);
+  border-bottom: 1px solid var(--rule-faint);
+}
+
+.signin__brand .masthead__mark {
+  width: 64px;
+  height: 40px;
+}
+
+.signin__brand .masthead__title {
+  font-size: 34px;
+}
+
+.signin__brand .masthead__subtitle {
+  font-size: 14px;
+}
+
+.signin__lede {
+  margin: 0;
+  color: var(--silt);
+  font-size: 16px;
+}
+
+.signin__lede strong {
+  color: var(--foam);
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 0.92em;
+}
+
+.signin__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-sm);
+}
+
+.signin__btn {
+  width: 100%;
+}
+
+.signin__link {
+  align-self: center;
+  margin-top: 2px;
+  border-color: transparent;
+  color: var(--glow);
+}
+
+.signin__divider {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-sm);
+  margin: 6px 0 2px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--silt-deep);
+}
+
+.signin__divider::before,
+.signin__divider::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--rule);
+}
+
+.signin__busy {
+  margin: 8px 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--silt);
+  text-align: center;
+}
+
+.signin__fine {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--silt-deep);
+}
+
+/* ========== Masthead account ========== */
+
+.masthead__user {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.masthead__email {
+  max-width: 22ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.masthead__signout {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--glow);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.masthead__signout:hover {
+  color: var(--foam);
+}

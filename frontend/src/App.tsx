@@ -1,7 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useAuth0 } from '@auth0/auth0-react';
 import './styles/app.css';
 
-import { Masthead } from './components/Masthead';
+import { Masthead, type Account } from './components/Masthead';
 import { SequenceInput } from './components/SequenceInput';
 import { SpecimenHeader } from './components/SpecimenHeader';
 import { Determination } from './components/Determination';
@@ -11,6 +12,7 @@ import { Drivers } from './components/Drivers';
 import { DiagnosticCharacters } from './components/DiagnosticCharacters';
 import { Reliability } from './components/Reliability';
 import { Limitations } from './components/Limitations';
+import { SignIn } from './components/SignIn';
 import {
   EmptyState,
   ErrorBanner,
@@ -19,8 +21,61 @@ import {
   UntrainedWarning,
 } from './components/States';
 import { useScreen } from './hooks/useScreen';
+import { setAccessTokenProvider } from './api/client';
+import { auth0Config, authEnabled } from './auth/config';
 
 export default function App() {
+  return authEnabled ? <AuthGate /> : <Screener />;
+}
+
+/** Shows the sign-in page until Auth0 says who this is, then the screener. */
+function AuthGate() {
+  const {
+    isLoading,
+    isAuthenticated,
+    error,
+    user,
+    loginWithRedirect,
+    logout,
+    getAccessTokenSilently,
+  } = useAuth0();
+
+  useEffect(() => {
+    setAccessTokenProvider(isAuthenticated ? () => getAccessTokenSilently() : null);
+    return () => setAccessTokenProvider(null);
+  }, [isAuthenticated, getAccessTokenSilently]);
+
+  const signIn = useCallback(
+    (connection: string, signup = false) =>
+      void loginWithRedirect({
+        authorizationParams: {
+          connection,
+          ...(signup ? { screen_hint: 'signup' } : {}),
+        },
+      }),
+    [loginWithRedirect],
+  );
+
+  if (isLoading || !isAuthenticated) {
+    return (
+      <SignIn
+        busy={isLoading}
+        error={error?.message}
+        onGoogle={() => signIn(auth0Config.googleConnection)}
+        onEmail={() => signIn(auth0Config.dbConnection)}
+        onSignUp={() => signIn(auth0Config.dbConnection, true)}
+      />
+    );
+  }
+
+  const account: Account = {
+    label: user?.email ?? user?.name ?? 'Signed in',
+    onSignOut: () => void logout({ logoutParams: { returnTo: window.location.origin } }),
+  };
+  return <Screener account={account} />;
+}
+
+function Screener({ account }: { account?: Account }) {
   const [sequence, setSequence] = useState('');
   const [runNumber, setRunNumber] = useState(1);
   const {
@@ -41,7 +96,7 @@ export default function App() {
 
   return (
     <div className="shell">
-      <Masthead runNumber={runNumber} screenedAt={new Date()} />
+      <Masthead runNumber={runNumber} screenedAt={new Date()} account={account} />
 
       <div className="stack" style={{ marginTop: 26 }}>
         {modelTrained === false && <UntrainedWarning />}
@@ -54,7 +109,12 @@ export default function App() {
         />
 
         {status === 'error' && error && errorKind && (
-          <ErrorBanner message={error} kind={errorKind} onRetry={handleSubmit} />
+          <ErrorBanner
+            message={error}
+            kind={errorKind}
+            onRetry={handleSubmit}
+            onSignOut={account?.onSignOut}
+          />
         )}
 
         {status === 'idle' && <EmptyState />}

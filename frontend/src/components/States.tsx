@@ -4,6 +4,8 @@ interface ErrorBannerProps {
   message: string;
   kind: ScreenErrorKind;
   onRetry?: () => void;
+  /** Offered on auth errors, when sign-in is enabled. */
+  onSignOut?: () => void;
 }
 
 /**
@@ -11,7 +13,7 @@ interface ErrorBannerProps {
  * dressed up or replaced with sample data: the backend returns it precisely so
  * that nobody sees a fabricated score, and the UI honours that.
  */
-export function ErrorBanner({ message, kind, onRetry }: ErrorBannerProps) {
+export function ErrorBanner({ message, kind, onRetry, onSignOut }: ErrorBannerProps) {
   const heading =
     kind === 'model_untrained'
       ? 'The server cannot score yet.'
@@ -19,7 +21,9 @@ export function ErrorBanner({ message, kind, onRetry }: ErrorBannerProps) {
         ? 'Could not reach the backend.'
         : kind === 'validation'
           ? 'That sequence needs a change.'
-          : 'The backend errored.';
+          : kind === 'auth'
+            ? 'Sign-in problem.'
+            : 'The backend errored.';
 
   return (
     <div className="banner banner--error" role="alert">
@@ -32,7 +36,12 @@ export function ErrorBanner({ message, kind, onRetry }: ErrorBannerProps) {
           </span>
         )}
       </span>
-      {onRetry && kind !== 'validation' && (
+      {kind === 'auth' && onSignOut && (
+        <button type="button" className="btn btn--chip" onClick={onSignOut}>
+          Sign in again
+        </button>
+      )}
+      {onRetry && kind !== 'validation' && kind !== 'auth' && (
         <button type="button" className="btn btn--chip" onClick={onRetry}>
           Try again
         </button>

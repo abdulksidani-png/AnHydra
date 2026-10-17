@@ -30,6 +30,28 @@ const MAX_LENGTH = 10_000; // matches MAX_LENGTH in app/main.py
 const TIMEOUT_MS = 30_000; // ESM-2 embedding on CPU is not instant
 
 /**
+ * Supplies the Auth0 access token for /score. Set by App once someone is
+ * signed in; null when sign-in is disabled, so requests go out without one.
+ */
+type TokenProvider = () => Promise<string | undefined>;
+let accessTokenProvider: TokenProvider | null = null;
+
+export function setAccessTokenProvider(provider: TokenProvider | null): void {
+  accessTokenProvider = provider;
+}
+
+async function authHeaders(): Promise<Record<string, string>> {
+  if (!accessTokenProvider) return {};
+  try {
+    const token = await accessTokenProvider();
+    if (!token) throw new Error('no token');
+    return { Authorization: `Bearer ${token}` };
+  } catch {
+    throw new ScreenError('Your session has expired. Sign out and sign in again.', 'auth');
+  }
+}
+
+/**
  * Strip FASTA headers and keep only the 20 standard residues.
  * Mirrors clean_sequence() in features.py so the count shown in the UI is the
  * same count the backend will validate against.
@@ -80,13 +102,15 @@ export async function scoreSequence(request: ScoreRequest): Promise<ScoreResult>
     return { data: mockScore(cleanSequence(request.sequence)), isMock: true };
   }
 
+  const auth = await authHeaders();
+
   let response: Response;
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
     response = await fetch(`${API_BASE}/score`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...auth },
       // The backend accepts raw or FASTA and cleans it itself; send what the
       // user typed so its own parse is the one that counts.
       body: JSON.stringify({ sequence: request.sequence }),
@@ -111,6 +135,12 @@ export async function scoreSequence(request: ScoreRequest): Promise<ScoreResult>
     throw new ScreenError(
       detail ?? 'The model is not loaded on the server.',
       'model_untrained',
+    );
+  }
+  if (response.status === 401 || response.status === 403) {
+    throw new ScreenError(
+      detail ?? 'You need to be signed in with an allowed account to screen sequences.',
+      'auth',
     );
   }
   if (response.status === 400 || response.status === 422) {
