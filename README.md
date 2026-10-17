@@ -141,6 +141,26 @@ and its output is part of why the result is credible: it followed the data, not 
 This is the one result none of the other four models can produce. ESM-2 scores better; it cannot tell
 you what it saw.
 
+### In plain terms
+
+Dehydrins are a family of plant proteins, and biologists identify them by one specific 15-letter
+stretch: `EKKGIMDKIKEKLPG`. It is called the K-segment — K for lysine, the letter that dominates it —
+and it was named decades ago. A protein containing it is a dehydrin. That is the definition.
+
+Our network had never heard of it. No database, no textbook, no hints: it saw 1,049 proteins as
+strings of letters and had to work out for itself what separated the protective ones. Afterwards we
+asked each of its pattern detectors what it had learned to look for, and several answered with
+pieces of that exact stretch.
+
+This matters because a score of 0.99 cannot be checked — anyone can say the model got lucky or found
+a shortcut. "It found the K-segment" can be checked: look up the motif, compare, and see. It is
+specific, it is published, and it either matches or it does not.
+
+And we predicted the wrong motif. We expected glycine/serine repeats, the CAHS signature this project
+is named for. The dataset contains no CAHS proteins, so the network learned the dehydrin motif
+instead — it followed the data rather than the project's title. Had it produced what we expected, we
+would have had more reason to suspect we were fooling ourselves.
+
 ## How we checked the result
 
 The real task first scored **0.987**, far above the 0.7–0.8 we predicted. We treated that as a
