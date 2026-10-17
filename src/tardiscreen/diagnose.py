@@ -157,6 +157,55 @@ def length_matched_eval(df, emb):
           "\n  biology; what drops was length. Report both numbers, not the flattering one.")
 
 
+def strict_disorder_eval(df, emb, thresholds=(0.5, 0.7, 0.9)):
+    """The honest task: protective vs. negatives that are ACTUALLY disordered.
+
+    Needs data/disorder_coverage.csv (python -m tardiscreen.coverage). Filtering the negatives by
+    annotated disorder coverage removes the folded-protein-with-a-floppy-tail entries that let the
+    model win by detecting disorder itself. The survivors are already embedded, so this is cheap.
+    """
+    import pandas as pd
+
+    print("\n" + "=" * 78)
+    print("6. STRICT-DISORDER REAL TASK — protective vs. genuinely disordered negatives")
+    print("=" * 78)
+
+    cov_path = DATA_DIR / "disorder_coverage.csv"
+    if not cov_path.exists():
+        print(f"  {cov_path} not found — run `python -m tardiscreen.coverage` first. Skipping.")
+        return
+
+    cov = pd.read_csv(cov_path, dtype={"sequence_id": str})
+    frac_by_id = dict(zip(cov["sequence_id"], cov["disorder_fraction"]))
+    pos_label, neg_label = TASKS["real"]
+
+    for t in thresholds:
+        keep_neg = {sid for sid, f in frac_by_id.items() if f >= t}
+        sub = df[(df["label"] == pos_label)
+                 | ((df["label"] == neg_label) & (df["sequence_id"].isin(keep_neg)))
+                 ].reset_index(drop=True)
+        y = (sub["label"] == pos_label).astype(int).to_numpy()
+        groups = sub["cluster_id"].to_numpy()
+        n_pos_cl = len(set(groups[y == 1]))
+        n_neg_cl = len(set(groups[y == 0]))
+
+        print(f"\n  threshold >= {t:.1f} disordered: {int(y.sum())} protective vs "
+              f"{int((1 - y).sum())} negatives  ({n_pos_cl} / {n_neg_cl} clusters)")
+        print(f"    positive base rate {y.mean():.2f} — PR-AUC starts there by chance, so judge "
+              "these\n    by ROC-AUC, which imbalance does not inflate.")
+        if n_neg_cl < 5:
+            print("    too few negative clusters for a 5-fold cluster split — skipping.")
+            continue
+
+        for model in ("composition", "biophysical", "esm2"):
+            roc, roc_s, pr, pr_s, _ = _cv_scores(_matrix(sub, emb, model), y, groups)
+            print(f"    {model:>12}: ROC-AUC {roc:.3f}±{roc_s:.3f}  PR-AUC {pr:.3f}±{pr_s:.3f}")
+
+    print("\n  Read: this is the question the project set out to ask. Compare against the unfiltered"
+          "\n  real task (esm2 0.987): a large drop means much of that number was disorder"
+          "\n  detection; holding up means a genuine protective-family signal among IDPs.")
+
+
 def main():
     df, emb = _load()
     print(f"[diagnose] {len(df)} sequences with embeddings; "
@@ -166,6 +215,7 @@ def main():
     check_shuffled_control(df, emb)
     check_residues(df)
     length_matched_eval(df, emb)
+    strict_disorder_eval(df, emb)
     print("\n" + "=" * 78)
     print("Interpretation: the 'trivial' task shares a source across classes, so it is the clean"
           "\ncomparison. The 'real' task does not. Any check above that scores high on 'real' but"
