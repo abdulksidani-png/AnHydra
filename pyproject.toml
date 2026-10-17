@@ -1,0 +1,17 @@
+[project]
+name = "tardiscreen"
+version = "0.1.0"
+description = "Score protein sequences for CAHS-like, desiccation-protective character."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# Install for development (makes `from tardiscreen import ...` work everywhere):
+#   pip install -e .

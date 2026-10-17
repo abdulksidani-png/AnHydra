@@ -1,0 +1,26 @@
+# Secrets
+.env
+
+# Data + model artifacts (don't commit; regenerate from data.py)
+data/*.csv
+data/*.npy
+data/*.fasta
+data/*.clstr
+data/*.png
+data/*.json
+*.pt
+*.pkl
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
