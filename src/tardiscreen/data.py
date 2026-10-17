@@ -160,18 +160,21 @@ def fetch_positives() -> list[Record]:
     the honest-provenance share is easy to report. Evidence comes from UniProt's `protein_existence`.
     """
     name_q = " OR ".join(f"protein_name:{t}" for t in POSITIVE_NAME_TERMS)
-    query = f"(({name_q}) OR keyword:anhydrobiosis OR anhydrobiosis)"
+    # reviewed:true = Swiss-Prot (manually curated). A free-text/keyword net over all of UniProtKB
+    # returns ~59k mostly-unreviewed, computationally-annotated hits — training on those just
+    # reproduces UniProt's own annotation pipeline. Curated entries are the honest positive set.
+    query = f"(({name_q}) OR keyword:anhydrobiosis) AND reviewed:true"
     rows = _uniprot_fetch(query)
     records = [_row_to_record(r, "protective") for r in rows]
     records = [r for r in records if r.sequence_id and r.sequence]
-    # Experimental ("Evidence at protein level") first — these are the trustworthy labels.
+    # Experimental ("Evidence at protein level") first — these are the most trustworthy labels.
     records.sort(key=lambda r: 0 if r.evidence_code == EXPERIMENTAL else 1)
 
     if not records:
         print("[positives] WARNING: UniProt returned no protective sequences.")
-        print("            Would change: add taxon terms (taxonomy_name:Tardigrada, Rotifera, "
-              "Nematoda), broaden to family:'LEA' / family:'CAHS', or drop the protein_name scoping "
-              "to a free-text OR of the same synonyms.")
+        print("            Would change: drop `AND reviewed:true` to include TrEMBL, add taxon terms "
+              "(taxonomy_name:Tardigrada OR Rotifera OR Nematoda), or broaden to family:LEA / "
+              "family:CAHS.")
     else:
         n_exp = sum(r.evidence_code == EXPERIMENTAL for r in records)
         print(f"[positives] {len(records)} sequences ({n_exp} with experimental evidence) from UniProt")
@@ -493,10 +496,9 @@ def _acceptance_checks(df: pd.DataFrame) -> bool:
         if count < MIN_PER_LABEL:
             ok = False
             if lbl == "protective":
-                print("    -> loosen fetch_positives: add taxon terms "
-                      "(taxonomy_name:Tardigrada OR Rotifera OR Nematoda), add family:'LEA'/"
-                      "family:'CAHS', or switch protein_name scoping to a free-text OR of the "
-                      "same synonyms to raise recall.")
+                print("    -> loosen fetch_positives: drop `AND reviewed:true` to include TrEMBL, "
+                      "add taxon terms (taxonomy_name:Tardigrada OR Rotifera OR Nematoda), or add "
+                      "family:LEA / family:CAHS to raise recall.")
 
     multi = df.groupby("sequence_id")["label"].nunique()
     bad_ids = multi[multi > 1]
