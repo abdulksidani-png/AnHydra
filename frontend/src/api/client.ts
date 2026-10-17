@@ -26,8 +26,8 @@ const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 
 const VALID_RESIDUES = /^[ACDEFGHIKLMNPQRSTVWY]+$/;
 const MIN_LENGTH = 20; // matches MIN_LENGTH in app/main.py
-const MAX_LENGTH = 10_000; // matches MAX_LENGTH in app/main.py
-const TIMEOUT_MS = 30_000; // ESM-2 embedding on CPU is not instant
+const MAX_LENGTH = 1022; // matches MAX_LENGTH in app/main.py
+const TIMEOUT_MS = 120_000; // ESM-2 embedding on CPU is not instant
 
 /**
  * Supplies the Auth0 access token for /score. Set by App once someone is

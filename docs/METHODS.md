@@ -134,11 +134,13 @@ result that follows.
 | tier | what it is | n |
 | --- | --- | --- |
 | **protective** (positive) | LEA, dehydrin and other anhydrobiosis-associated disordered proteins from UniProt | 1,069 |
-| **idp_matched** (hard negative) | genuinely disordered UniProt proteins, matched 1:1 to a positive on disorder coverage and length | 529 matched pairs |
+| **idp_matched** (hard negative) | genuinely disordered UniProt proteins, matched 1:1 to a positive on disorder coverage and length | 529 pairs before final filtering; 529 positives and 520 negatives in committed OOF artifacts |
 | **ordered** (sanity negative) | folded globular proteins | the *trivial* task only |
 
-3,151 sequences in total carry embeddings. The **real** task uses only the matched subset, because
-that is the only subset where the matching guarantee holds.
+3,151 sequences in total carry embeddings. The **real** task uses the matched subset. The committed final OOF artifacts contain
+1,049 rows (529 positive, 520 negative), so they are not 529 complete retained pairs.
+Pre-filter balance does not establish balance after clustering or missing-embedding exclusions.
+New runs preserve partner IDs and must report final retained pairs and balance.
 
 ## Limitations, in full
 

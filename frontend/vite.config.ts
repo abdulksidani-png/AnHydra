@@ -15,10 +15,11 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       port: 5173,
-      host: true,
+      host: '127.0.0.1',
       proxy: {
         '/score': { target, changeOrigin: true },
         '/health': { target, changeOrigin: true },
+        '/ready': { target, changeOrigin: true },
       },
     },
     build: {

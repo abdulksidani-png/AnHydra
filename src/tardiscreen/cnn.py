@@ -21,6 +21,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from .evaluate import task_subset
+
 from .evaluate import DATA_DIR, N_SPLITS, SEED, TASKS, _load, cluster_split_folds
 from .features import AA
 
@@ -72,14 +74,22 @@ def _build(max_len: int):
     return DeepFamSmall()
 
 
-def _split_val(train_idx, groups, rng):
-    """Hold out whole clusters for early stopping — a random row split would leak homologs."""
-    clusters = np.unique(groups[train_idx])
-    rng.shuffle(clusters)
-    n_val = max(1, int(len(clusters) * VAL_CLUSTER_FRAC))
-    val_clusters = set(clusters[:n_val])
-    in_val = np.array([g in val_clusters for g in groups[train_idx]])
-    return train_idx[~in_val], train_idx[in_val]
+def _split_val(train_idx, groups, rng, y):
+    """Choose whole validation clusters while preserving both classes on each side."""
+    from sklearn.model_selection import GroupShuffleSplit
+
+    train_idx = np.asarray(train_idx)
+    groups, y = np.asarray(groups), np.asarray(y)
+    n_clusters = len(np.unique(groups[train_idx]))
+    if n_clusters < 4:
+        raise ValueError("CNN validation requires at least four independent clusters.")
+    n_validation = max(2, int(np.ceil(n_clusters * VAL_CLUSTER_FRAC)))
+    splitter = GroupShuffleSplit(n_splits=256, test_size=n_validation,
+                                 random_state=int(rng.integers(0, 2**31 - 1)))
+    for fit, val in splitter.split(train_idx, y[train_idx], groups[train_idx]):
+        if set(y[train_idx[fit]]) == {0, 1} and set(y[train_idx[val]]) == {0, 1}:
+            return train_idx[fit], train_idx[val]
+    raise ValueError("Cannot form cluster-disjoint CNN training/validation with both classes.")
 
 
 def train_fold(X, y, train_idx, val_idx, max_len: int, verbose: bool = False):
@@ -88,6 +98,8 @@ def train_fold(X, y, train_idx, val_idx, max_len: int, verbose: bool = False):
     from sklearn.metrics import roc_auc_score
     from torch import nn
 
+    if set(y[train_idx]) != {0, 1} or set(y[val_idx]) != {0, 1}:
+        raise ValueError("CNN training and validation must both contain both classes.")
     torch.manual_seed(SEED)
     model = _build(max_len)
     n_pos = max(int(y[train_idx].sum()), 1)
@@ -134,15 +146,14 @@ def cnn_cv(sub, y, groups, verbose: bool = False):
     import torch
     from sklearn.metrics import average_precision_score, roc_auc_score
 
-    max_len = _choose_length(sub["sequence"])
-    X = np.stack([encode(s, max_len) for s in sub["sequence"]])
     y = np.asarray(y)
     rng = np.random.default_rng(SEED)
-    print(f"    padded/truncated to {max_len} residues")
 
     rocs, prs, oof = [], [], np.full(len(y), np.nan)
     for fold, (tr, te) in enumerate(cluster_split_folds(y, groups, N_SPLITS), 1):
-        tr_fit, tr_val = _split_val(tr, groups, rng)
+        tr_fit, tr_val = _split_val(tr, groups, rng, y)
+        max_len = _choose_length(sub.iloc[tr_fit]["sequence"])
+        X = np.stack([encode(s, max_len) for s in sub["sequence"]])
         model, val_auc = train_fold(X, y, tr_fit, tr_val, max_len, verbose)
         model.eval()
         with torch.no_grad():
@@ -164,10 +175,7 @@ def main():
     df, _ = _load()
     rows = []
     for task, (pos_label, neg_label) in TASKS.items():
-        sub = df[df["label"].isin([pos_label, neg_label])]
-        if task == "real" and "in_matched_set" in sub.columns:
-            sub = sub[sub["in_matched_set"].astype(str).str.lower().isin(("true", "1"))]
-        sub = sub.reset_index(drop=True)
+        sub = task_subset(df, task)
         if sub.empty or sub["label"].nunique() < 2:
             print(f"[cnn] task '{task}': skipped (missing a class)")
             continue

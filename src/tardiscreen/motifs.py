@@ -24,6 +24,8 @@ from collections import Counter
 
 import numpy as np
 
+from .evaluate import task_subset
+
 from .cnn import DATA_DIR, KERNELS, SEED, _build, _choose_length, _split_val, encode, train_fold
 from .evaluate import TASKS, _load
 from .features import AA
@@ -106,10 +108,7 @@ def main():
 
     df, _ = _load()
     pos_label, neg_label = TASKS["real"]
-    sub = df[df["label"].isin([pos_label, neg_label])]
-    if "in_matched_set" in sub.columns:
-        sub = sub[sub["in_matched_set"].astype(str).str.lower().isin(("true", "1"))]
-    sub = sub.reset_index(drop=True)
+    sub = task_subset(df, "real")
 
     y = (sub["label"] == pos_label).astype(int).to_numpy()
     max_len = _choose_length(sub["sequence"])
@@ -121,7 +120,7 @@ def main():
     # is no held-out test set. Early stopping still uses clusters held out of training.
     rng = np.random.default_rng(SEED)
     groups = sub["cluster_id"].to_numpy()
-    fit_idx, val_idx = _split_val(np.arange(len(y)), groups, rng)
+    fit_idx, val_idx = _split_val(np.arange(len(y)), groups, rng, y)
     model, val_auc = train_fold(X, y, fit_idx, val_idx, max_len)
     print(f"[motifs] trained (validation AUC {val_auc:.3f}); reading filters\n")
 

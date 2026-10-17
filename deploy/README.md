@@ -1,5 +1,12 @@
 # TardiScreen deployment
 
+Release validation and deployment gates are in [RELEASE.md](../docs/RELEASE.md).
+The restored React frontend is optional: use `Caddyfile.react.template` when
+serving its build, and proxy `/ready` alongside `/score` and `/health`.
+The existing `Caddyfile.template` and `Caddyfile.anhydra` serve the FastAPI page.
+Do not replace a live React site's configuration with the FastAPI-only variant
+unless deliberately switching interfaces.
+
 ## AnHydra domain configuration
 
 The current app serves its page from `app/static/index.html` through FastAPI.

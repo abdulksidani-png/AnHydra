@@ -151,6 +151,19 @@ def main():
     if not ds.exists():
         raise FileNotFoundError(f"{ds} not found — run `python -m tardiscreen.data` first.")
     df = pd.read_csv(ds, dtype=str).fillna("")
+    if "idp_matched" in set(df["label"]):
+        ids = df.loc[df["label"].isin(["protective", "idp_matched"]), "sequence_id"].tolist()
+        rows = fetch_uniprot_coverage(ids)
+        if set(r["sequence_id"] for r in rows) != set(ids):
+            raise ValueError("Coverage fetch incomplete; previous coverage file preserved.")
+        from .artifacts import atomic_destination
+        out = pd.DataFrame(rows)
+        out["label"] = out["sequence_id"].map(dict(zip(df["sequence_id"], df["label"])))
+        out["annotation_source"] = "uniprot_region"
+        with atomic_destination(OUT_PATH) as temporary:
+            out.to_csv(temporary, index=False)
+        print(f"[coverage] refreshed both current classes: {len(out)} rows")
+        return
     wanted = set(df.loc[df["label"] == "other_idp", "sequence_id"])
     print(f"[coverage] {len(wanted)} DisProt negatives in dataset.csv")
 

@@ -19,6 +19,12 @@ language.
 *(The repository and the Python package are named `tardiscreen`, the project's working title.
 AnHydra is the same thing.)*
 
+Release checks and deployment gates: [docs/RELEASE.md](docs/RELEASE.md).
+The API accepts one sequence of **20–1,022 standard residues**, including an optional FASTA
+header. Longer inputs are rejected instead of silently scoring only a prefix. Scores are
+uncalibrated classifier outputs, not experimentally measured protection probabilities.
+The results below are recorded experiments; they have not been regenerated with the release fixes.
+
 ---
 
 ## How it works
@@ -29,7 +35,7 @@ AnHydra is the same thing.)*
 
 ESM-2 is **frozen** — we never touched Meta's 35M pretrained weights. What we trained is the thin
 classifier sitting on top of them, which is called *linear probing*. The second, interpretable model
-is both the "why" panel and a fallback that still runs if embeddings stall.
+provides auxiliary signatures for the "why" panel; it does not replace ESM-2 if embedding fails.
 
 ## The question that makes this hard
 
@@ -71,7 +77,7 @@ close to the entire classifier — the positives are a few dense families whose 
 through a 40% identity split, while the negatives are unrelated singletons.
 
 So we removed that advantage: **hold out an entire family**, train on the rest, test on a family with
-no relatives in training.
+no members of that annotated family in training. Related families can remain.
 
 | held-out family | n | BLAST | ESM-2 |
 | --- | --- | --- | --- |
@@ -80,12 +86,12 @@ no relatives in training.
 | **mean** | | **0.832** | **0.876** |
 
 LEA is the cleaner test — dehydrins are LEA group 2, so holding them out still leaves relatives in
-training, which is why BLAST manages 0.925 there. With the family genuinely absent, BLAST falls to
+training, which is why BLAST manages 0.925 there. With the annotated LEA family held out, BLAST falls to
 0.739 while the language model holds at 0.818.
 
-**This is the finding.** When a close relative exists, alignment and embeddings are equivalent. When
-one does not, alignment degrades and the language model holds — exactly the case that matters for
-screening sequences from organisms nobody has catalogued yet.
+**This is the finding.** BLAST and ESM-2 have similar measured AUC on the cluster-split benchmark.
+ESM-2 has higher measured AUC on these two annotated family holdouts. The families are related,
+and these experiments do not establish performance for arbitrary uncatalogued organisms.
 
 ## The CNN rediscovered a published motif on its own
 

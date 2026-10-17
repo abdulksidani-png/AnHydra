@@ -141,8 +141,7 @@ def main():
         print("    -> the pool does not cover the positives' coverage/length region. More"
               "\n       candidates there, or wider calipers, before the pairing means anything.")
     if not pairs:
-        print("[match] no pairs within the calipers. Widen them or enlarge the pool.")
-        return
+        raise ValueError("No pairs within the calipers; previous outputs are stale and must not be merged.")
 
     pos_idx = [p for p, _ in pairs]
     cand_idx = [c for _, c in pairs]
@@ -176,6 +175,7 @@ def main():
               "\n       enlarge the pool where the positives live, or report the imbalance.")
 
     out = matched_neg.copy()
+    out["matched_positive_id"] = matched_pos["sequence_id"].to_numpy()
     out["label"] = "idp_matched"
     out["source"] = "uniprot"
     out.to_csv(OUT_PATH, index=False)

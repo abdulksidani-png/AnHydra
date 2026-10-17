@@ -13,6 +13,7 @@ inventing a number — a fabricated score would undercut the whole point of the 
 from __future__ import annotations
 
 from pathlib import Path
+import logging
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
@@ -20,12 +21,12 @@ from pydantic import BaseModel
 
 from tardiscreen.explain import explain
 from tardiscreen.features import AA, clean_sequence, compute_features
-from tardiscreen.model import MODELS_PATH, predict
+from tardiscreen.model import MODELS_PATH, predict, load_bundle
 
 PAGE_PATH = Path(__file__).resolve().parent / "static" / "index.html"
 
 MIN_LENGTH = 20          # below this, composition/disorder signals are meaningless
-MAX_LENGTH = 10_000      # guard against someone pasting a whole proteome
+MAX_LENGTH = 1022        # ESM-2 token budget: 1024 minus BOS/EOS; never silently truncate
 
 app = FastAPI(title="AnHydra",
               description="Score a protein sequence for desiccation-protective family character.")
@@ -80,7 +81,11 @@ def score(req: ScoreRequest) -> ScoreResponse:
             detail="Model not trained yet — run `python -m tardiscreen.model` to write "
                    "data/models.joblib, then reload.",
         )
-    pred = predict(seq)
+    try:
+        pred = predict(seq)
+    except Exception as exc:
+        logging.getLogger(__name__).error("Scoring unavailable (%s)", type(exc).__name__)
+        raise HTTPException(status_code=503, detail="Scoring is unavailable. Ask the operator to check the model and encoder runtime.") from exc
     return ScoreResponse(
         score=round(pred.score, 3),
         label=pred.label,
@@ -93,8 +98,23 @@ def score(req: ScoreRequest) -> ScoreResponse:
 
 @app.get("/health")
 def health() -> dict:
-    """Liveness + whether the app can actually score (useful after a Vultr restart)."""
+    """Liveness and artifact presence only; use /ready and a score for readiness."""
     return {"status": "ok", "model_trained": MODELS_PATH.exists()}
+
+
+@app.get("/ready")
+def ready() -> dict:
+    """Validate the model and installed runtime without downloading encoder weights."""
+    from importlib.util import find_spec
+
+    try:
+        load_bundle()
+        if any(find_spec(name) is None for name in ("torch", "transformers")):
+            raise ValueError("Missing encoder runtime")
+    except Exception as exc:
+        logging.getLogger(__name__).warning("Readiness unavailable (%s)", type(exc).__name__)
+        raise HTTPException(status_code=503, detail="Model or encoder runtime unavailable.") from exc
+    return {"status": "ok", "inference_verified": False}
 
 
 @app.get("/", response_class=HTMLResponse)

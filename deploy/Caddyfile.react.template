@@ -1,0 +1,14 @@
+# Optional React deployment. Build frontend/dist and copy its contents to
+# /var/www/tardiscreen before switching from the FastAPI-only configuration.
+@@DOMAIN@@ {
+    encode zstd gzip
+    @api path /score /health /ready /docs /docs/* /redoc /openapi.json
+    handle @api {
+        reverse_proxy 127.0.0.1:8000
+    }
+    handle {
+        root * /var/www/tardiscreen
+        try_files {path} /index.html
+        file_server
+    }
+}

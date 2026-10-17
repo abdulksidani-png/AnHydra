@@ -8,7 +8,7 @@ export function Limitations() {
   return (
     <p className="callout">
       <strong>A determination of family, not of function.</strong> Resembling
-      CAHS or LEA correlates with protective behaviour without establishing it,
+      the LEA or dehydrin training families does not establish protective behaviour. The training data contains no CAHS examples,
       and no dataset of quantitative protection exists at the scale this model
       would need. Read every entry here as a reason to put the sequence in the
       next round of wet-lab testing — nothing more than that, and nothing less.

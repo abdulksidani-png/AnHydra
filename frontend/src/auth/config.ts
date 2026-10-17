@@ -1,7 +1,8 @@
 /**
  * Auth0 settings, read from Vite env at build time. None of these are secrets —
  * a single-page app's domain and client ID are public by design. The secret
- * part (the signing key) never leaves Auth0, and the backend checks every token.
+ * part (the signing key) never leaves Auth0, and API access control must be configured separately on the backend.
+ * This repository currently exposes a public scoring API; UI sign-in is not API authorization.
  *
  * Leave VITE_AUTH0_DOMAIN unset to run the UI without sign-in (local dev).
  */

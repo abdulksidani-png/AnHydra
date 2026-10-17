@@ -44,6 +44,12 @@ def main(identity: float = 0.4):
     neg = pd.read_csv(DATA_DIR / "matched_negatives.csv")
     matched_pos_ids = set(pd.read_csv(DATA_DIR / "matched_positives.csv",
                                       dtype=str)["sequence_id"])
+    if "matched_positive_id" not in neg.columns:
+        raise ValueError("Matched negatives lack partner IDs; rerun match_negatives before merging.")
+    if (neg["sequence_id"].duplicated().any() or neg["matched_positive_id"].duplicated().any()
+            or neg["matched_positive_id"].isna().any()
+            or not set(neg["matched_positive_id"].astype(str)) <= matched_pos_ids):
+        raise ValueError("Matched negatives must contain unique, valid one-to-one partner IDs.")
     print(f"[merge] existing dataset: {dict(df['label'].value_counts())}")
     print(f"[merge] matched negatives: {len(neg)}   matched positives: {len(matched_pos_ids)}")
 
@@ -73,12 +79,31 @@ def main(identity: float = 0.4):
     clustered = cluster_sequences(records, identity=identity)
 
     out = pd.DataFrame([r.__dict__ for r in clustered])
+    if out.empty:
+        raise ValueError("No records survived clustering; existing dataset preserved.")
+    # Preserve pair membership after deduplication and cross-label clustering.
+    # Legacy files do not contain partner IDs, so require re-matching rather than
+    # silently claiming balance from independent sets of accession IDs.
+    partners = dict(zip(neg["sequence_id"].astype(str), neg["matched_positive_id"].astype(str)))
+    surviving_positive_ids = set(out.loc[out["label"] == "protective", "sequence_id"])
+    surviving_negative_ids = set(out.loc[out["label"] == NEW_LABEL, "sequence_id"])
+    surviving_pairs = {sid: pos for sid, pos in partners.items()
+                       if pos in surviving_positive_ids and sid in surviving_negative_ids}
+    out = out[(out["label"] != NEW_LABEL) | out["sequence_id"].isin(surviving_pairs)].copy()
+    matched_pos_ids = set(surviving_pairs.values())
+    if not surviving_pairs:
+        raise ValueError("No complete matched pairs survived; existing dataset preserved.")
     out["in_matched_set"] = ((out["label"] == NEW_LABEL)
                              | out["sequence_id"].isin(matched_pos_ids))
+    pair_by_id = {sid: pos for sid, pos in surviving_pairs.items()}
+    pair_by_id.update({pos: pos for pos in matched_pos_ids})
+    out["matched_pair_id"] = out["sequence_id"].map(pair_by_id).fillna("")
 
     shutil.copy2(DATASET, BACKUP)
     print(f"[merge] previous dataset backed up to {BACKUP}")
-    out.to_csv(DATASET, index=False)
+    from .artifacts import atomic_destination
+    with atomic_destination(DATASET) as temporary:
+        out.to_csv(temporary, index=False)
 
     print(f"\n[merge] wrote {DATASET}: {len(out)} sequences, "
           f"{out['cluster_id'].nunique()} clusters")

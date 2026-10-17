@@ -18,6 +18,8 @@ from pathlib import Path
 
 import numpy as np
 
+from .artifacts import load_embeddings
+
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 SEED = 42
 N_SPLITS = 5
@@ -56,7 +58,7 @@ def composition_vector(sequence: str):
 # Data loading + feature matrices
 # ---------------------------------------------------------------------------------------------------
 def _load():
-    """Return (df, emb) where df has rows that have an embedding, and emb maps id -> vector."""
+    """Return the full dataset and verified vectors; never silently drop missing rows."""
     import pandas as pd
 
     ds = DATA_DIR / "dataset.csv"
@@ -67,16 +69,7 @@ def _load():
         raise FileNotFoundError(f"{npz} not found — run `python -m tardiscreen.embed` first.")
 
     df = pd.read_csv(ds, dtype=str).fillna("")
-    z = np.load(npz, allow_pickle=False)
-    ids = z["ids"].astype(str)
-    X = z["X"]
-    emb = {sid: X[i] for i, sid in enumerate(ids)}
-
-    before = len(df)
-    df = df[df["sequence_id"].isin(emb)].reset_index(drop=True)
-    if len(df) < before:
-        print(f"[eval] note: {before - len(df)} rows had no embedding and were dropped "
-              f"(rerun embed if that's unexpected).")
+    emb, _ = load_embeddings(npz, df)
     return df, emb
 
 

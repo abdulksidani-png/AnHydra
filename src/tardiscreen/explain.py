@@ -64,7 +64,18 @@ def build_prompt(score: float, label: str, homolog: str | None,
 
 
 API_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-TIMEOUT_S = float(os.environ.get("GEMINI_TIMEOUT_S", "12"))
+def _timeout() -> float:
+    import math
+    try:
+        value = float(os.environ.get("GEMINI_TIMEOUT_S", "12"))
+        if not math.isfinite(value) or value <= 0:
+            raise ValueError
+        return value
+    except ValueError:
+        return 12.0
+
+
+TIMEOUT_S = _timeout()
 
 
 def explain(score: float, label: str, homolog: str | None,
@@ -106,12 +117,15 @@ def explain(score: float, label: str, homolog: str | None,
 
 def _offline_readout(score: float, label: str, top_features: list[tuple[str, float]]) -> str:
     """No-API fallback so the app still demos if Gemini is down or rate-limited."""
-    drivers = ", ".join(name for name, _ in top_features[:3]) or "its overall composition"
-    verdict = "worth prioritizing for wet-lab testing" if score >= 0.5 else "unlikely to be protective"
-    # The score is always P(protective) — never describe it as the character of the negative class.
-    return (f"This sequence scores {score:.2f} for desiccation-protective family character "
-            f"(call: {label}), driven mainly by {drivers}. On that basis it is {verdict}. Note: this "
-            f"is a family/triage signal, not a measured protection efficacy.")
+    signals = ", ".join(
+        f"{name.replace('_', ' ')} ({'supports' if value > 0 else 'opposes' if value < 0 else 'neutral'}, {value:+.2f})"
+        for name, value in top_features[:3]
+    ) or "no feature contributions available"
+    return (f"This sequence has a protective-family score of {score:.2f} (call: {label}). "
+            f"Separate auxiliary biophysical model signals: {signals}; these do not explain "
+            "the ESM-2 score. This is a family/triage signal, not measured protection efficacy; "
+            "validate promising candidates experimentally.")
+
 
 
 if __name__ == "__main__":

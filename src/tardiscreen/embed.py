@@ -20,6 +20,8 @@ from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
+
+from .artifacts import atomic_destination
 import torch
 from tqdm import tqdm
 from transformers import AutoModel, AutoTokenizer
@@ -142,7 +144,8 @@ def _save(cached: dict[str, np.ndarray], model_name: str,
     CACHE.parent.mkdir(parents=True, exist_ok=True)
     metadata = ({"sequence_hashes": np.array([_sequence_hash(sequences[s]) for s in ids_list])}
                 if sequences is not None else {})
-    np.savez(CACHE, ids=np.array(ids_list, dtype=object).astype(str), X=X, model=np.array(model_name), **metadata)
+    with atomic_destination(CACHE) as temporary:
+        np.savez(temporary, ids=np.array(ids_list, dtype=str), X=X, model=np.array(model_name), **metadata)
     return X
 
 
@@ -200,8 +203,9 @@ def build(dataset_csv: Path | None = None):
 
     # Validate the file we just wrote (round-trip) against dataset.csv's own id column.
     reloaded = np.load(CACHE, allow_pickle=False)
-    _acceptance_checks(n_rows, reloaded["ids"].astype(str).tolist(), reloaded["X"],
-                       df["sequence_id"].tolist())
+    if not _acceptance_checks(n_rows, reloaded["ids"].astype(str).tolist(), reloaded["X"],
+                              df["sequence_id"].tolist()):
+        raise ValueError("Embedding acceptance checks failed.")
     return CACHE
 
 

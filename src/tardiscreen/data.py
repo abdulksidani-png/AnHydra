@@ -460,6 +460,8 @@ def write_table(records: list[Record], path: Path | None = None) -> Path:
 def build() -> Path:
     records = fetch_positives() + fetch_hard_negatives() + fetch_sanity_negatives()
     records = cluster_sequences(records)
+    if not records or not _acceptance_checks(pd.DataFrame([r.__dict__ for r in records])):
+        raise ValueError("Dataset acceptance failed; existing dataset preserved.")
     return write_table(records)
 
 
@@ -539,4 +541,5 @@ if __name__ == "__main__":
     else:
         summary = _write_summary(df, DATA_DIR / "dataset_summary.md")
         print(f"Wrote summary to {summary}")
-        _acceptance_checks(df)
+        if not _acceptance_checks(df):
+            raise SystemExit("Dataset acceptance checks failed.")

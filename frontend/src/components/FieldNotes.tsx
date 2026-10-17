@@ -25,7 +25,7 @@ export function FieldNotes({ explanation }: FieldNotesProps) {
           {paragraph}
         </p>
       ))}
-      <p className="notes__source">generated from the feature contributions</p>
+      <p className="notes__source">Readout of the family score and separate auxiliary biophysical signals</p>
     </section>
   );
 }

@@ -238,7 +238,7 @@ footer .mono{font-size:12px}
   <div class="stack">
     <div class="card" id="input-card">
       <h2>Sequence</h2>
-      <label class="sr-only" for="seq">Protein sequence, raw or FASTA</label>
+      <label class="sr-only" for="seq">Protein sequence, raw or FASTA, 20 to 1022 residues</label>
       <textarea id="seq" spellcheck="false" autocapitalize="off" autocorrect="off"
         placeholder="Paste an amino-acid sequence or a FASTA record…&#10;MSGSGSGKEKEKDKDKGSGSGSHGHGSGSEKEKDKDK"></textarea>
       <div class="bar-row">
@@ -248,7 +248,7 @@ footer .mono{font-size:12px}
         <button class="chip" data-ex="folded">folded control</button>
         <span class="count mono" id="count">0 residues</span>
       </div>
-      <p class="alert" id="error" hidden></p>
+      <p class="alert" id="error" role="alert" hidden></p>
       <p class="alert warn" id="untrained" hidden>
         The model is not loaded on this server, so scoring will fail. Run
         <code class="mono">python -m tardiscreen.model</code> and restart the service.
@@ -283,8 +283,8 @@ footer .mono{font-size:12px}
           <div class="fact"><b>K-segment</b><span>The motif our from-scratch CNN rediscovered on its
             own — the 15-residue stretch that <em>defines</em> the dehydrin family, published decades
             ago. Nothing in the pipeline was told it exists.</span></div>
-          <div class="fact"><b>4 confounds</b><span>tested and ruled out before we believed our own
-            number, including rebuilding the entire negative set when one of them stuck.</span></div>
+          <div class="fact"><b>4 confounds</b><span>investigated, including rebuilding the negative
+            set after finding a disorder confound. Species bias and remote homology remain limitations.</span></div>
         </div>
       </div>
     </div>
@@ -295,7 +295,7 @@ footer .mono{font-size:12px}
       <p class="muted" style="text-align:center">Embedding the sequence with ESM-2… the first request after a restart takes about 15 seconds while the model loads.</p>
     </div>
 
-    <div id="results" hidden class="stack">
+    <div id="results" aria-live="polite" hidden class="stack">
 
       <div class="card fade">
         <h2>Determination</h2>
@@ -328,7 +328,7 @@ footer .mono{font-size:12px}
           <div class="verdict-text">
             <span class="call" id="call"><span class="dot"></span><span id="call-text"></span></span>
             <p id="verdict-line"></p>
-            <p class="scope">The score is the model's probability that this sequence <em>belongs to</em>
+            <p class="scope">The score reflects how strongly the model associates this sequence with
               the desiccation-protective families — CAHS, LEA, dehydrins. It is not a measure of how
               much the protein protects. Read it as a ranking for what to test next.</p>
           </div>
@@ -382,7 +382,7 @@ footer .mono{font-size:12px}
         <div class="card fade">
           <h2>Specimen</h2>
           <p class="acc" id="spec-len">—</p>
-          <p class="muted">residues scored, after dropping non-standard characters and any FASTA header.</p>
+          <p class="muted">standard residues scored, after removing whitespace and an optional FASTA header. Inputs are limited to 1,022 residues.</p>
         </div>
       </div>
 
@@ -469,7 +469,7 @@ document.querySelectorAll("[data-ex]").forEach(b =>
 
 fetch("/health").then(r=>r.json()).then(h => {
   $("stamp-status").innerHTML = h.model_trained
-    ? '<b style="color:var(--glow)">model loaded</b>'
+    ? '<b style="color:var(--glow)">model artifact present</b>'
     : '<b style="color:var(--amber)">model not loaded</b>';
   if (!h.model_trained) $("untrained").hidden = false;
 }).catch(()=>{ $("stamp-status").textContent = "server unreachable"; });
@@ -480,6 +480,7 @@ function showError(msg){
 }
 
 async function run(){
+  if ($("go").disabled) return;
   const sequence = $("seq").value.trim();
   $("error").hidden = true;
   if (!sequence) { showError("Paste a sequence first, or try one of the examples."); return; }
@@ -536,7 +537,7 @@ function render(d, raw){
   }).join("");
 
   $("explanation").textContent = d.explanation;
-  const offline = /gly_ser_his|driven mainly by/.test(d.explanation);
+  const offline = /Separate auxiliary biophysical model signals:/.test(d.explanation);
   $("byline").textContent = offline
     ? "Written by the offline template — the Gemini API was unavailable for this request."
     : "Written by Gemini from the model's output. It is given the score, the call and the feature contributions, and nothing else.";
@@ -621,8 +622,7 @@ function renderMotifs(hits){
   if (!hits.length) {
     $("motifs").innerHTML = `<li class="motif none"><span class="seq">no match</span>
       <span class="what">Neither the dehydrin K-segment nor a CAHS-style glycine/serine repeat appears
-      literally in this sequence. The score does not depend on them — the language model reads the whole
-      sequence, not a motif list.</span></li>`;
+      literally in this sequence. The score does not depend on them — the language model scores the accepted sequence, not a motif list.</span></li>`;
     return;
   }
   $("motifs").innerHTML = hits.map(h =>

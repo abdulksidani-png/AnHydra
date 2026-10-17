@@ -1,8 +1,7 @@
 """The two models: a classifier head on ESM-2 embeddings, and the interpretable biophysical model.
 
-Owner: Model. Keep both — the embedding model is the centerpiece; the feature model is the "why" and
-the fallback that runs if embeddings stall. Also keep a composition baseline (in evaluate.py) as the
-bar to beat.
+Owner: Model. The embedding classifier supplies the score; the feature model provides auxiliary
+biophysical signals. The composition baseline in evaluate.py is the bar to beat.
 
 Train the production models (fit on all data) and save them for the app:
     python -m tardiscreen.model        # writes data/models.joblib
@@ -17,6 +16,7 @@ from pathlib import Path
 import numpy as np
 
 from .features import FEATURE_NAMES, compute_features
+from .artifacts import atomic_destination, load_embeddings
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 MODELS_PATH = DATA_DIR / "models.joblib"
@@ -25,7 +25,7 @@ POSITIVE = "protective"   # the production task: protective vs. everything else
 
 @dataclass
 class Prediction:
-    score: float                 # calibrated probability of "protective"
+    score: float                 # uncalibrated classifier score of "protective"
     label: str                   # argmax family call
     top_features: list[tuple[str, float]]   # (feature_name, contribution), for the "why"
     nearest_homolog: str | None = None       # id of nearest known protective sequence
@@ -72,14 +72,7 @@ def train(dataset_csv: Path | None = None):
                                "`python -m tardiscreen.data` then `python -m tardiscreen.embed`.")
 
     df = pd.read_csv(ds, dtype=str).fillna("")
-    z = np.load(npz, allow_pickle=False)
-    # Bind the arrays before the comprehension. np.load on a .npz is lazy, so `z["X"][i]` inside
-    # the loop re-reads and decompresses the WHOLE array on every iteration — 3151 full copies,
-    # which the OOM killer ends. evaluate.py already does it this way.
-    ids = z["ids"].astype(str)
-    X = z["X"]
-    emb = {sid: X[i] for i, sid in enumerate(ids)}
-    df = df[df["sequence_id"].isin(emb)].reset_index(drop=True)
+    emb, encoder = load_embeddings(npz, df)
 
     y = (df["label"] == POSITIVE).astype(int).to_numpy()
     X_esm = np.vstack([emb[sid] for sid in df["sequence_id"]]).astype(np.float64)
@@ -97,16 +90,17 @@ def train(dataset_csv: Path | None = None):
     bundle = {
         "esm_clf": esm_clf, "bio_clf": bio_clf, "feature_names": FEATURE_NAMES,
         "homolog_X": homolog_X.astype(np.float32), "homolog_ids": homolog_ids,
-        "model_name": str(z["model"]) if "model" in z else "",
+        "model_name": encoder,
     }
     MODELS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    joblib.dump(bundle, MODELS_PATH)
+    with atomic_destination(MODELS_PATH) as temporary:
+        joblib.dump(bundle, temporary)
     print(f"[model] trained on {len(df)} sequences ({int(y.sum())} protective); saved {MODELS_PATH}")
     return MODELS_PATH
 
 
 @lru_cache(maxsize=1)
-def _load_bundle(path_str: str, mtime: float) -> dict:
+def _load_bundle(path_str: str, mtime: int) -> dict:
     """Read models.joblib, cached. `mtime` is part of the key so retraining invalidates the cache."""
     import joblib
 
@@ -117,7 +111,13 @@ def load_bundle() -> dict:
     """The fitted bundle, read from disk once and reused across requests."""
     if not MODELS_PATH.exists():
         raise FileNotFoundError(f"{MODELS_PATH} not found — run `python -m tardiscreen.model` first.")
-    return _load_bundle(str(MODELS_PATH), MODELS_PATH.stat().st_mtime)
+    bundle = _load_bundle(str(MODELS_PATH), MODELS_PATH.stat().st_mtime_ns)
+    required = {"esm_clf", "bio_clf", "feature_names", "homolog_ids", "homolog_X", "model_name"}
+    if not isinstance(bundle, dict) or not required <= bundle.keys() or not bundle["model_name"]:
+        raise ValueError("Invalid model bundle; retrain before scoring.")
+    if list(bundle["feature_names"]) != FEATURE_NAMES:
+        raise ValueError("Model features do not match this app; retrain before scoring.")
+    return bundle
 
 
 def predict(sequence: str) -> Prediction:

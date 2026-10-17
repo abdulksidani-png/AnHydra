@@ -1,17 +1,4 @@
-/**
- * Held-out evaluation numbers shown on the results page.
- *
- * These are NOT returned by /score — they are a property of the model, not of
- * one sequence, so they live here and you edit them by hand from
- * docs/EVALS.md after each run.
- *
- * The numbers below are copied from docs/STATUS.md as of 2026-10-17, which
- * records them as real measurements on a negative set that was later found to
- * be confounded. They are presented with that caveat attached rather than on
- * their own, because 0.987 on the "hard" task without the caveat is the
- * overclaiming STATUS.md warns against. Replace both the table and the
- * caveat once the rebuilt negatives are re-run.
- */
+/** Recorded historical results from docs/results/results_table.csv. */
 
 export interface EvalRow {
   task: string;
@@ -38,17 +25,15 @@ export interface EvalTable {
 }
 
 export const EVALUATION: EvalTable = {
-  protocol:
-    'Five-fold cross-validation, folds split by CD-HIT cluster at 40% identity so homologs cannot straddle train and test.',
-  lastUpdated: '2026-10-17 · pre-rebuild',
+  protocol: 'Five-fold cross-validation split by CD-HIT clusters at 40% identity. More remote relatives can remain across folds.',
+  lastUpdated: '2026-10-17 · recorded experiment, before release fixes',
   rows: [
-    { task: 'vs ordered globular (sanity)', model: 'Composition baseline', rocAuc: 0.912, prAuc: null, tier: 'sanity' },
-    { task: 'vs ordered globular (sanity)', model: 'Biophysical features', rocAuc: 0.886, prAuc: null, tier: 'sanity' },
-    { task: 'vs ordered globular (sanity)', model: 'ESM-2 + head', rocAuc: 0.997, prAuc: null, tier: 'sanity' },
-    { task: 'vs other disordered proteins', model: 'Composition baseline', rocAuc: 0.872, prAuc: null, tier: 'real' },
-    { task: 'vs other disordered proteins', model: 'Biophysical features', rocAuc: 0.851, prAuc: null, tier: 'real' },
-    { task: 'vs other disordered proteins', model: 'ESM-2 + head', rocAuc: 0.987, prAuc: null, tier: 'real' },
+    { task: 'vs ordered globular (sanity)', model: 'Composition baseline', rocAuc: 0.9215341581, prAuc: 0.9066046999, tier: 'sanity' },
+    { task: 'vs ordered globular (sanity)', model: 'Biophysical features', rocAuc: 0.8930475874, prAuc: 0.8732615273, tier: 'sanity' },
+    { task: 'vs ordered globular (sanity)', model: 'ESM-2 + head', rocAuc: 0.9975374394, prAuc: 0.9970886997, tier: 'sanity' },
+    { task: 'vs matched disordered proteins', model: 'Composition baseline', rocAuc: 0.8973678209, prAuc: 0.8976658049, tier: 'real' },
+    { task: 'vs matched disordered proteins', model: 'Biophysical features', rocAuc: 0.7795334854, prAuc: 0.8041229635, tier: 'real' },
+    { task: 'vs matched disordered proteins', model: 'ESM-2 + head', rocAuc: 0.9897496372, prAuc: 0.9901075189, tier: 'real' },
   ],
-  caveat:
-    'The 0.987 on the hard task is a real measurement, but not a trustworthy one. Shuffled-label controls sit at 0.50, so the cross-validation is sound, and length-matching does not explain it. The negative set does: most DisProt entries are folded proteins with a disordered region, not fully disordered proteins, so the "hard" task was substantially re-measuring folded vs. unfolded. The negatives are being rebuilt from UniProt and filtered on disorder coverage; these numbers will be replaced by the re-run.',
+  caveat: 'Recorded OOF artifacts contain 529 positives and 520 negatives. The data is plant-dominated with no CAHS examples; species bias and related-family leakage remain possible. These historical measurements have not been rerun with the release validation changes. The score is not calibrated protection efficacy.',
 };

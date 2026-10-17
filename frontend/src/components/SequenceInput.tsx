@@ -29,7 +29,7 @@ export function SequenceInput({
   return (
     <section className="card card--tight" aria-labelledby={`${fieldId}-label`}>
       <label className="input__label" id={`${fieldId}-label`} htmlFor={fieldId}>
-        Enter a sequence to identify
+        Enter a sequence to identify (20–1,022 residues)
       </label>
 
       <textarea

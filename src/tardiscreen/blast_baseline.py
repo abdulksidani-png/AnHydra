@@ -29,6 +29,8 @@ from pathlib import Path
 
 import numpy as np
 
+from .evaluate import task_subset
+
 from .evaluate import DATA_DIR, TASKS, _load, cluster_split_folds
 
 EVALUE = 10.0            # permissive: a weak hit is still evidence, and the score weighs by bitscore
@@ -149,10 +151,7 @@ def main():
     rows = []
 
     for task, (pos_label, neg_label) in TASKS.items():
-        sub = df[df["label"].isin([pos_label, neg_label])]
-        if task == "real" and "in_matched_set" in sub.columns:
-            sub = sub[sub["in_matched_set"].astype(str).str.lower().isin(("true", "1"))]
-        sub = sub.reset_index(drop=True)
+        sub = task_subset(df, task)
         if sub.empty or sub["label"].nunique() < 2:
             print(f"[blast] task '{task}': skipped (missing a class)")
             continue

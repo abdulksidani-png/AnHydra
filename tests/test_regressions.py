@@ -97,7 +97,7 @@ def test_merge_is_repeatable(tmp_path):
     rows = [data.Record("p", "A" * 40, "protective", "uniprot", cluster_id="c0"),
             data.Record("n", "C" * 40, "idp_matched", "uniprot", cluster_id="c1")]
     pd.DataFrame([r.__dict__ for r in rows]).to_csv(dataset, index=False)
-    pd.DataFrame([{"sequence_id": "n", "sequence": "C" * 40}]).to_csv(tmp_path / "matched_negatives.csv", index=False)
+    pd.DataFrame([{"sequence_id": "n", "sequence": "C" * 40, "matched_positive_id": "p"}]).to_csv(tmp_path / "matched_negatives.csv", index=False)
     pd.DataFrame({"sequence_id": ["p"]}).to_csv(tmp_path / "matched_positives.csv", index=False)
     with patch.multiple(merge_dataset, DATA_DIR=tmp_path, DATASET=dataset, BACKUP=tmp_path / "backup.csv"), patch.object(data, "cluster_sequences", side_effect=lambda records, identity: records):
         merge_dataset.main()
@@ -118,7 +118,7 @@ def test_single_positive_can_match_exact_candidate():
 @pytest.fixture
 def embed_module():
     # Cache and encoder-selection logic needs no model weights or heavy runtime.
-    spec = importlib.util.spec_from_file_location("embed_under_test", model.DATA_DIR.parent / "src/tardiscreen/embed.py")
+    spec = importlib.util.spec_from_file_location("tardiscreen.embed_under_test", model.DATA_DIR.parent / "src/tardiscreen/embed.py")
     module = importlib.util.module_from_spec(spec)
     with patch.dict(sys.modules, {"torch": Mock(), "transformers": Mock(), "tqdm": Mock()}):
         spec.loader.exec_module(module)
@@ -149,7 +149,9 @@ def test_training_and_prediction_round_trip(tmp_path):
                           "label": ["protective", "protective", "ordered", "ordered"]})
     frame.to_csv(tmp_path / "dataset.csv", index=False)
     vectors = np.array([[1., 2.], [1., 3.], [-1., -2.], [-1., -3.]])
-    np.savez(tmp_path / "embeddings.npz", ids=np.array(ids), X=vectors, model="test/encoder")
+    from tardiscreen.artifacts import sequence_hash
+    np.savez(tmp_path / "embeddings.npz", ids=np.array(ids), X=vectors, model="test/encoder",
+             sequence_hashes=np.array([sequence_hash(s) for s in frame["sequence"]]))
     model_path = tmp_path / "models.joblib"
     embedding = SimpleNamespace(embed_sequences=Mock(return_value=vectors[:1]))
     with patch.multiple(model, DATA_DIR=tmp_path, MODELS_PATH=model_path):

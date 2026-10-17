@@ -1,5 +1,13 @@
 # Deploying this UI to the Vultr box
 
+Current release instructions: [../docs/RELEASE.md](../docs/RELEASE.md).
+Use [../deploy/Caddyfile.react.template](../deploy/Caddyfile.react.template)
+instead of copying the historical examples below. Include `/ready` in the API
+routes; otherwise the SPA fallback can return HTML with HTTP 200 for readiness.
+Install locked dependencies with `npm ci`, then run `npm test` and `npm run build`.
+Auth0 is optional UI sign-in only: this backend's scoring API is public and does
+not validate Auth0 tokens. Do not describe UI sign-in as server authorization.
+
 For whoever owns deploy/infra (per `docs/STATUS.md`, that's Teammate 1 — systemd, Caddy, `.env`, DNS).
 
 ## What this is

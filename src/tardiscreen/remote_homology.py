@@ -21,6 +21,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from .evaluate import task_subset
+
 from .blast_baseline import _blast_fold, _require_blast
 from .evaluate import DATA_DIR, TASKS, _classifier, _load, _matrix, cluster_split_folds
 
@@ -40,10 +42,7 @@ def _auc(y, scores) -> float | None:
 def collect(df, emb, task: str = "real"):
     """Out-of-fold BLAST scores, ESM-2 probabilities and best bitscores over one cluster split."""
     pos_label, neg_label = TASKS[task]
-    sub = df[df["label"].isin([pos_label, neg_label])]
-    if task == "real" and "in_matched_set" in sub.columns:
-        sub = sub[sub["in_matched_set"].astype(str).str.lower().isin(("true", "1"))]
-    sub = sub.reset_index(drop=True)
+    sub = task_subset(df, task)
 
     y = (sub["label"] == pos_label).astype(int).to_numpy()
     groups = sub["cluster_id"].to_numpy()

@@ -9,7 +9,7 @@ interface DeterminationProps {
 const CALLS = {
   protective: {
     headline: 'Protective family character',
-    family: 'resembles the CAHS / LEA / anhydrobiosis families',
+    family: 'resembles the LEA / dehydrin training families',
   },
   other_idp: {
     headline: 'No protective signature',

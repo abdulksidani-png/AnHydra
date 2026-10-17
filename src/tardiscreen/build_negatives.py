@@ -259,6 +259,7 @@ def attach_sequences(rows: list[dict], chunk: int = 100) -> list[dict]:
             if _is_protective_name(text):
                 continue
             row["sequence"] = (entry.get("sequence") or {}).get("value", "")
+            row["length"] = len(row["sequence"])
         print(f"  {min(i + chunk, len(accs))}/{len(accs)} accessions")
     return [r for r in rows if r["sequence"] and MIN_LEN <= len(r["sequence"]) <= MAX_LEN]
 

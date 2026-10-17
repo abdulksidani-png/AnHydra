@@ -1,7 +1,7 @@
 """Interpretable biophysical features for a protein sequence.
 
-These are the features behind the "why" readout and the fallback model that still runs if the
-embedding pipeline stalls. They are standard IDP descriptors; keep them transparent and easy to
+These are the features behind the "why" readout and the auxiliary model that runs alongside the
+embedding classifier. They are standard IDP descriptors; keep them transparent and easy to
 explain to a judge.
 
 All functions take a plain amino-acid string (one-letter codes, upper-case) and are pure.

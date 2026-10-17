@@ -24,6 +24,8 @@ import re
 
 import numpy as np
 
+from .evaluate import task_subset
+
 from .blast_baseline import _blast_fold, _require_blast
 from .evaluate import DATA_DIR, SEED, _classifier, _load, _matrix
 
@@ -116,10 +118,7 @@ def main():
     _require_blast()
     df, emb = _load()
 
-    sub = df[df["label"].isin(["protective", "idp_matched"])]
-    if "in_matched_set" in sub.columns:
-        sub = sub[sub["in_matched_set"].astype(str).str.lower().isin(("true", "1"))]
-    sub = sub.reset_index(drop=True)
+    sub = task_subset(df, "real")
 
     pos_ids = sub.loc[sub["label"] == "protective", "sequence_id"].tolist()
     fam = fetch_families(pos_ids)

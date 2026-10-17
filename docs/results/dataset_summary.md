@@ -1,4 +1,4 @@
-# Dataset summary
+# Historical dataset summary — before matched-negative rebuild
 
 Total sequences: **4277**, in **3011** clusters.
 
@@ -11,3 +11,6 @@ Total sequences: **4277**, in **3011** clusters.
 Positives with experimental evidence (`Evidence at protein level`): **14.2%**.
 
 > Benchmark: HaloClass trained on 28,030 sequences after CD-HIT at 50%. Desiccation proteins are far rarer, so our N is intentionally small and we cluster more strictly (40%).
+
+This describes the original data pull, not the final evaluated matched set. The committed
+remote-homology predictions and confusion matrix contain 529 positives and 520 negatives.
