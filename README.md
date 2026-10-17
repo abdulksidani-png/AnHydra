@@ -54,7 +54,7 @@ identity), never by row — so homologs cannot sit on both sides of a split.
 | composition | 20 amino-acid frequencies, no order | 0.922 | 0.897 |
 | biophysical | 9 interpretable features | 0.893 | 0.780 |
 | BLAST | classical alignment search | 0.977 | 0.981 |
-| CNN | DeepFam-style, trained from scratch | _pending_ | _pending_ |
+| CNN | DeepFam-style, trained from scratch | 0.987 | 0.965 |
 | **ESM-2** | **pretrained protein language model** | **0.998** | **0.990** |
 
 ### The result that actually distinguishes the models
@@ -81,13 +81,65 @@ with no relatives in training.
 
 | held-out family | n | BLAST | ESM-2 |
 | --- | --- | --- | --- |
-| LEA | 308 | 0.812 | **0.940** |
-| dehydrin | 198 | 0.941 | **0.967** |
-| **mean** | | **0.877** | **0.953** |
+| LEA | 308 | 0.739 | **0.818** |
+| dehydrin | 198 | 0.925 | **0.934** |
+| **mean** | | **0.832** | **0.876** |
+
+The LEA row is the cleaner test. Dehydrins are LEA group 2, so holding them out still leaves related
+proteins in training, and BLAST accordingly manages 0.925 there; with the family genuinely absent it
+falls to 0.739 while the model holds at 0.818.
 
 **This is the finding.** When a close relative exists, alignment and embeddings are equivalent. When
 one does not, alignment degrades and the language model holds — which is exactly the case that
 matters for screening sequences from organisms nobody has catalogued yet.
+
+## What the network learned
+
+The CNN is trained from scratch on raw sequence — no pretraining, no hand-designed features, no motif
+database. Its convolution filters are pattern detectors, so after training they can be asked what
+makes them fire. Ranking filters by how well their activation separates the classes and reading the
+strongest-activating windows gives the patterns the network found on its own (48 filters cleared the
+threshold):
+
+| filter | AUC | learned pattern |
+| --- | --- | --- |
+| 22 | 0.896 | `IKEKLPGYH` |
+| 16 | 0.894 | `FLDKIKEKL` |
+| 59 | 0.893 | `EKKGIMDKI` |
+| 26 | 0.893 | `EKIKEKLPG` |
+| 102 | 0.886 | `KGIKEKIKE` |
+
+Residue content across all learned motifs: **K 31%**, I 15%, E 12%, G 10%, D 7%, L 6%, V 4%, F 4%.
+
+### These reconstruct the dehydrin K-segment
+
+The dehydrin family is *defined* by a lysine-rich 15-residue motif, the
+[K-segment](https://pmc.ncbi.nlm.nih.gov/articles/PMC4215689), consensus `EKKGIMDKIKEKLPG`. The
+filters recover it:
+
+```
+canonical K-segment   E K K G I M D K I K E K L P G
+filter 59             E K K G I M D K I
+filter 26                     E K I K E K L P G
+filter 16                   F L D K I K E K L
+```
+
+Filter 59 matches the first nine residues exactly. Filter 26 covers the last nine with E where the
+canonical has D — and the published consensus is `[XKXGXX(D/E)KIK(D/E)KXPG]`, which permits either at
+that position ([Malik et al. 2017](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5415607/)). The 31%
+lysine content matches the same literature's finding that lysines are the most conserved residues in
+the segment.
+
+**Nothing in the pipeline was told this motif exists.** A network with 101k parameters, trained on
+1,049 sequences, recovered a motif that plant biologists named and published decades ago.
+
+It is also the *right* motif for this dataset rather than the expected one. We predicted glycine/
+serine repeats, the CAHS signature. The dataset contains **no CAHS proteins** — it is 308 LEA and 198
+dehydrins — so the network learned what is actually present. That mismatch between our expectation
+and its output is part of why the result is credible: it followed the data, not the project's title.
+
+This is the one result none of the other four models can produce. ESM-2 scores better; it cannot tell
+you what it saw.
 
 ## How we checked the result
 
