@@ -39,11 +39,13 @@ UNIPROT_QUERIES = (
     "(cc_domain:disordered) AND (reviewed:true)",
 )
 # A spread of well-annotated model organisms, so the negatives aren't one lineage's quirks.
-MOBIDB_TAXA = ("9606", "10090", "7227", "6239", "3702", "559292")
+MOBIDB_TAXA = ("9606", "10090", "7227", "6239", "3702", "559292",
+               "7955", "8355", "9913", "9823", "4577", "39947", "224308", "83333")
 
 MIN_COVERAGE = 0.40      # pool floor; the matching step narrows this to the positives' shape
+TARGET_USABLE = 2000     # candidates at >=0.60 coverage needed before skipping the MobiDB route
 PAGE_SIZE = 500
-MAX_PAGES = 12
+MAX_PAGES = 60          # fully-disordered proteins are rare; a shallow slice misses them
 
 
 # Short acronyms must match as whole words: a bare "lea" substring also hits "nuclear", "cleavage",
@@ -89,8 +91,10 @@ def _uniprot_page(resp) -> list[dict]:
         spans = _uniprot_spans(entry)
         if not spans:
             continue                      # no annotation means unmeasured, not ordered
-        rows.append(dict(sequence_id=acc, sequence=seq,
-                         disorder_fraction=round(_merge_fraction(spans, len(seq)), 4),
+        frac = _merge_fraction(spans, len(seq))
+        if frac < MIN_COVERAGE:
+            continue                      # a short disordered stretch in a folded protein
+        rows.append(dict(sequence_id=acc, sequence=seq, disorder_fraction=round(frac, 4),
                          n_regions=len(spans), length=len(seq),
                          annotation_source="uniprot_region"))
     return rows
@@ -239,6 +243,8 @@ def attach_sequences(rows: list[dict], chunk: int = 100) -> list[dict]:
 
 
 def main():
+    import sys
+
     import pandas as pd
 
     ds = DATA_DIR / "dataset.csv"
@@ -248,12 +254,17 @@ def main():
         existing = set(df["sequence_id"])
         print(f"[neg] {len(existing)} sequence_ids already in dataset.csv (will be excluded)")
 
-    rows = fetch_via_uniprot()
+    force_mobidb = "--mobidb" in sys.argv
+    rows = [] if force_mobidb else fetch_via_uniprot()
     route = "uniprot_region"
-    if len(rows) < 500:
-        print(f"[neg] UniProt route produced {len(rows)}; adding MobiDB.")
+    # Judge the pool by how many candidates are disordered ENOUGH to partner a positive
+    # (median coverage 0.88), not by raw count — a big pool of 0.16-coverage proteins is useless.
+    usable = sum(1 for r in rows if r["disorder_fraction"] >= 0.60)
+    if usable < TARGET_USABLE:
+        print(f"[neg] only {usable} candidates at >=0.60 coverage (want {TARGET_USABLE}); "
+              "adding MobiDB.")
         rows += fetch_via_mobidb()
-        route = "mixed" if rows else "none"
+        route = "mobidb" if force_mobidb else "mixed"
     rows = attach_sequences(rows)
 
     # Drop anything already in the dataset (a positive re-found as a negative would be mislabeled).
