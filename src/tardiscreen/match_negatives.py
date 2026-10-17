@@ -27,13 +27,20 @@ import numpy as np
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 OUT_PATH = DATA_DIR / "matched_negatives.csv"
 
-COVERAGE_CALIPER = 0.10          # max |coverage difference| within a pair
-LENGTH_CALIPER_FRAC = 0.15       # max |length difference|, as a fraction of the positive's length
-LENGTH_CALIPER_MIN = 20          # ...or this many residues, whichever is larger
+# Caliper width follows Austin (2011), Pharmaceutical Statistics 10(2):150-161: 0.2 x the standard
+# deviation of the variable being matched on minimized mean square error across his simulations.
+# Derived from this dataset rather than chosen, so it adapts to however the positives are spread.
+CALIPER_SD_FRACTION = 0.2
+# Balance criterion from the same literature: |standardized mean difference| < 0.10 is the
+# conventional evidence that a covariate is balanced between groups after matching.
+SMD_BALANCED = 0.10
 
 
-def _length_caliper(length: float) -> float:
-    return max(LENGTH_CALIPER_MIN, LENGTH_CALIPER_FRAC * length)
+def standardized_mean_difference(a, b) -> float:
+    """Cohen-style SMD: mean difference over the pooled SD. |SMD| < 0.10 is the balance convention."""
+    a, b = np.asarray(a, float), np.asarray(b, float)
+    pooled = np.sqrt((a.var(ddof=1) + b.var(ddof=1)) / 2)
+    return float((a.mean() - b.mean()) / pooled) if pooled > 0 else 0.0
 
 
 def match(positives, candidates):
@@ -49,10 +56,16 @@ def match(positives, candidates):
     cand_len = cand["length"].to_numpy(float)
     available = np.ones(len(cand), dtype=bool)
 
+    # Austin's rule, applied per variable on this dataset's own spread.
+    cov_caliper = CALIPER_SD_FRACTION * pos["disorder_fraction"].std(ddof=1)
+    len_caliper = CALIPER_SD_FRACTION * pos["length"].std(ddof=1)
+    print(f"[match] calipers (Austin 2011, 0.2 x SD of the positives): "
+          f"coverage +/-{cov_caliper:.3f}, length +/-{len_caliper:.0f} aa")
+
     eligible: dict[int, np.ndarray] = {}
     for i, row in pos.iterrows():
-        ok = (np.abs(cand_cov - row.disorder_fraction) <= COVERAGE_CALIPER) & \
-             (np.abs(cand_len - row.length) <= _length_caliper(row.length))
+        ok = (np.abs(cand_cov - row.disorder_fraction) <= cov_caliper) & \
+             (np.abs(cand_len - row.length) <= len_caliper)
         eligible[i] = np.flatnonzero(ok)
 
     pairs = []
@@ -62,8 +75,8 @@ def match(positives, candidates):
             continue
         row = pos.loc[i]
         # Among eligible candidates, take the closest in normalized (coverage, length) space.
-        d_cov = np.abs(cand_cov[options] - row.disorder_fraction) / COVERAGE_CALIPER
-        d_len = np.abs(cand_len[options] - row.length) / _length_caliper(row.length)
+        d_cov = np.abs(cand_cov[options] - row.disorder_fraction) / max(cov_caliper, 1e-9)
+        d_len = np.abs(cand_len[options] - row.length) / max(len_caliper, 1e-9)
         best = options[int(np.argmin(d_cov + d_len))]
         available[best] = False
         pairs.append((i, int(best)))
@@ -144,16 +157,18 @@ def main():
                      matched_neg["disorder_fraction"].to_numpy(float)]
     len_vals = np.r_[matched_pos["length"].to_numpy(float),
                      matched_neg["length"].to_numpy(float)]
+    cov_smd = standardized_mean_difference(matched_pos["disorder_fraction"],
+                                           matched_neg["disorder_fraction"])
+    len_smd = standardized_mean_difference(matched_pos["length"], matched_neg["length"])
     cov_auc, len_auc = _auc(cov_vals, labels), _auc(len_vals, labels)
-    print("\n  SELF-CHECK (both should sit near 0.50):")
-    print(f"    coverage-only ROC-AUC: {cov_auc:.3f}")
-    print(f"    length-only   ROC-AUC: {len_auc:.3f}")
-    worst = max(abs(cov_auc - 0.5), abs(len_auc - 0.5))
-    if worst > 0.05:
-        print("    -> still some separation. Tighten COVERAGE_CALIPER / LENGTH_CALIPER_FRAC and"
-              "\n       rerun; residual drift here reappears as inflated model AUC later.")
+    print("\n  BALANCE CHECK (|SMD| < 0.10 is the conventional threshold; AUC shown alongside):")
+    print(f"    disorder coverage: SMD {cov_smd:+.3f}   (ROC-AUC {cov_auc:.3f})")
+    print(f"    length           : SMD {len_smd:+.3f}   (ROC-AUC {len_auc:.3f})")
+    if max(abs(cov_smd), abs(len_smd)) < SMD_BALANCED:
+        print("    -> both variables balanced; neither can explain a later model result.")
     else:
-        print("    -> both variables are uninformative on this set, as intended.")
+        print("    -> NOT balanced. Residual imbalance here reappears as inflated model AUC;"
+              "\n       enlarge the pool where the positives live, or report the imbalance.")
 
     out = matched_neg.copy()
     out["label"] = "idp_matched"

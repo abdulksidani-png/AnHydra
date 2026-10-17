@@ -42,7 +42,11 @@ UNIPROT_QUERIES = (
 MOBIDB_TAXA = ("9606", "10090", "7227", "6239", "3702", "559292",
                "7955", "8355", "9913", "9823", "4577", "39947", "224308", "83333")
 
-MIN_COVERAGE = 0.40      # pool floor; the matching step narrows this to the positives' shape
+# Pool floor. There is no canonical "fully disordered" cutoff to cite, so rather than invent one
+# this is derived from the positives themselves: the 5th percentile of their annotated coverage.
+# A candidate below that is more disordered-tailed than any positive and can never be a partner.
+MIN_COVERAGE_FALLBACK = 0.40
+MIN_COVERAGE = MIN_COVERAGE_FALLBACK     # replaced at runtime by _coverage_floor()
 TARGET_USABLE = 2000     # candidates at >=0.60 coverage needed before skipping the MobiDB route
 PAGE_SIZE = 500
 MAX_PAGES = 60          # fully-disordered proteins are rare; a shallow slice misses them
@@ -58,6 +62,23 @@ PHRASE_TERMS = (
     "cryoprotect", "cytoplasmic abundant heat soluble", "secretory abundant heat soluble",
     "mitochondrial abundant heat soluble", "anhydrin", "tardigrade",
 )
+
+
+def _coverage_floor() -> float:
+    """5th percentile of the annotated positives' disorder coverage, or the fallback."""
+    import numpy as np
+    import pandas as pd
+
+    cov_path = DATA_DIR / "disorder_coverage.csv"
+    if not cov_path.exists():
+        return MIN_COVERAGE_FALLBACK
+    cov = pd.read_csv(cov_path)
+    if "label" not in cov.columns:
+        return MIN_COVERAGE_FALLBACK
+    pos = cov[(cov["label"] == "protective") & (cov["n_regions"] > 0)]["disorder_fraction"]
+    if len(pos) < 50:
+        return MIN_COVERAGE_FALLBACK
+    return float(np.percentile(pos, 5))
 
 
 def _is_protective_name(text: str) -> bool:
@@ -253,6 +274,11 @@ def main():
         df = pd.read_csv(ds, dtype=str).fillna("")
         existing = set(df["sequence_id"])
         print(f"[neg] {len(existing)} sequence_ids already in dataset.csv (will be excluded)")
+
+    global MIN_COVERAGE
+    MIN_COVERAGE = _coverage_floor()
+    print(f"[neg] pool floor set to {MIN_COVERAGE:.2f} coverage "
+          "(5th percentile of the annotated positives)")
 
     force_mobidb = "--mobidb" in sys.argv
     rows = [] if force_mobidb else fetch_via_uniprot()
