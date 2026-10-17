@@ -1,0 +1,69 @@
+<!doctype html>
+<!-- Source for the link-preview image. Render with scripts/make_og.py, which writes
+     app/static/og.png at 1200x630. Edit this, not the PNG. -->
+<html lang="en"><head><meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  *{box-sizing:border-box;margin:0}
+  body{width:1200px;height:630px;overflow:hidden;position:relative;
+    background:
+      radial-gradient(760px 520px at 12% -14%, #11384a 0%, transparent 62%),
+      radial-gradient(900px 600px at 88% 4%, #0d2c3e 0%, transparent 58%),
+      linear-gradient(180deg,#08192600 0%,#040d16 88%), #071420;
+    font-family:'Spectral',Georgia,serif; color:#e9f2f7;
+    display:flex; align-items:center; gap:56px; padding:0 72px}
+  .caustics{position:absolute;inset:-10%;opacity:.3;
+    background:repeating-linear-gradient(104deg,transparent 0 38px,rgba(68,211,196,.06) 38px 40px),
+               repeating-linear-gradient(76deg,transparent 0 54px,rgba(111,182,255,.045) 54px 56px)}
+  .copy{position:relative;flex:1 1 auto;min-width:0}
+  .brand{font-size:76px;font-weight:600;letter-spacing:-.025em;line-height:1}
+  .brand span{color:#44d3c4}
+  .line{margin-top:20px;font-size:35px;line-height:1.28;max-width:17ch}
+  .line em{font-style:normal;color:#44d3c4}
+  .stats{display:flex;gap:40px;margin-top:38px}
+  .stat b{display:block;font:500 29px/1 'IBM Plex Mono',monospace;color:#44d3c4}
+  .stat span{display:block;margin-top:9px;font-size:16.5px;color:#9fb6c6;max-width:22ch;line-height:1.35}
+  .url{position:absolute;left:72px;bottom:44px;
+    font:500 20px/1 'IBM Plex Mono',monospace;color:#7f9bad;letter-spacing:.06em}
+  figure{position:relative;flex:0 0 400px}
+  svg{width:400px;height:auto;display:block}
+</style></head>
+<body>
+<div class="caustics"></div>
+<div class="copy">
+  <div class="brand">An<span>Hydra</span></div>
+  <div class="line">Does this protein look like it can <em>survive drying out?</em></div>
+  <div class="stats">
+    <div class="stat"><b>0.818 AUC</b><span>on a protein family the model had never seen</span></div>
+    <div class="stat"><b>K-segment</b><span>a published motif our CNN found on its own</span></div>
+  </div>
+</div>
+<figure>
+  <svg viewBox="0 0 260 186">
+    <defs><radialGradient id="d" cx="50%" cy="46%">
+      <stop offset="0%" stop-color="#1d5068" stop-opacity=".9"/>
+      <stop offset="65%" stop-color="#113246" stop-opacity=".5"/>
+      <stop offset="100%" stop-color="#0b2334" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="c"><path d="M52 88c0-24 14-37 40-39l76-2c30-2 44 15 44 39s-14 41-44 39l-76-2c-26-2-40-11-40-35z"/></clipPath></defs>
+    <circle cx="132" cy="90" r="88" fill="url(#d)"/>
+    <circle cx="132" cy="90" r="86" fill="none" stroke="#44d3c4" stroke-opacity=".22" stroke-width="1.6"/>
+    <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <g stroke="#2aa698" stroke-width="8">
+        <path d="M84 124v17"/><path d="M114 127v18"/><path d="M144 127v18"/><path d="M176 122l14 14"/></g>
+      <g stroke="#2aa698" stroke-width="2.4">
+        <path d="M79 143l-6 6M89 143l6 6"/><path d="M109 147l-6 6M119 147l6 6"/>
+        <path d="M139 147l-6 6M149 147l6 6"/><path d="M188 138l-1 9M193 134l8 2"/></g>
+      <path d="M52 88c0-24 14-37 40-39l76-2c30-2 44 15 44 39s-14 41-44 39l-76-2c-26-2-40-11-40-35z"
+            fill="#0f2b3c" stroke="#44d3c4" stroke-width="3.6"/>
+      <g clip-path="url(#c)" stroke="#44d3c4" stroke-opacity=".5" stroke-width="2.2">
+        <path d="M96 42q7 46 1 92"/><path d="M126 40q7 48 1 94"/>
+        <path d="M156 40q7 48 1 94"/><path d="M186 44q6 44 0 88"/></g>
+      <path d="M53 80q-12 1-17 8" stroke="#44d3c4" stroke-width="3.6"/>
+      <circle cx="72" cy="74" r="3.8" fill="#44d3c4" stroke="none"/>
+    </g>
+  </svg>
+</figure>
+<div class="url">anhydra.work</div>
+</body></html>

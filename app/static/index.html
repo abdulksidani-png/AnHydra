@@ -20,7 +20,7 @@
 :root{
   --abyss:#071420; --abyss-2:#040d16;
   --column:#0e2030; --column-raised:#14293a;
-  --foam:#e9f2f7; --silt:#9fb6c6; --silt-deep:#728ea2;
+  --foam:#e9f2f7; --silt:#9fb6c6; --silt-deep:#7f9bad;
   --rule:#1b3346; --rule-strong:#29485f; --rule-faint:#132637;
   --glow:#44d3c4; --glow-deep:#2aa698; --amber:#e9a23b;
   --acidic:#ef7d5a; --basic:#6fb6ff; --polar:#44d3c4; --phobic:#7d93a8; --special:#e9c46a;
@@ -72,6 +72,72 @@ h1 .hy{color:var(--glow)}
   text-align:right; line-height:1.9; letter-spacing:.02em}
 .stamp b{color:var(--silt); font-weight:500}
 
+
+/* ===================== Hero =====================
+   The animation is the argument: the animal dries to a tun and comes back. Everything
+   is a transform on a group, so it costs one composited layer and no layout. */
+.hero{display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);
+  gap:36px; align-items:center; padding:46px 0 42px}
+.hero-line{margin:0; font-size:clamp(27px,3.4vw,40px); font-weight:600;
+  line-height:1.18; letter-spacing:-.018em}
+.hero-line em{font-style:normal; color:var(--glow)}
+.hero-sub{margin:18px 0 0; color:var(--silt); font-size:16.5px; max-width:48ch}
+.hero-cue{margin:22px 0 0; font:500 12.5px/1 var(--mono); color:var(--silt-deep);
+  letter-spacing:.1em; text-transform:uppercase}
+.hero-cue span{display:inline-block; animation:nudge 2.6s ease-in-out infinite}
+@keyframes nudge{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
+.hero-fig{margin:0}
+.hero-fig svg{width:100%; height:auto; display:block; overflow:visible}
+
+.water{animation:water 14s ease-in-out infinite}
+@keyframes water{
+  0%,12%{opacity:1; transform:scale(1)}
+  34%,62%{opacity:0; transform:scale(.55)}
+  82%,100%{opacity:1; transform:scale(1)}
+}
+.water{transform-origin:130px 88px}
+
+/* The body shrivels: narrower, squatter, pulled in toward its own centre. */
+.tard{transform-origin:132px 80px; animation:tun 14s ease-in-out infinite}
+@keyframes tun{
+  0%,12%{transform:scale(1,1)}
+  36%,60%{transform:scale(.66,.86) translateX(20px)}
+  80%,100%{transform:scale(1,1)}
+}
+/* Legs retract almost completely — a tun has no legs showing. */
+.legs,.claws{transform-origin:130px 120px; animation:retract 14s ease-in-out infinite}
+@keyframes retract{
+  0%,12%{transform:scaleY(1); opacity:1}
+  36%,60%{transform:scaleY(.12); opacity:.35}
+  80%,100%{transform:scaleY(1); opacity:1}
+}
+/* Creases deepen as it folds; the eye closes. */
+.segs{animation:crease 14s ease-in-out infinite}
+@keyframes crease{0%,12%{stroke-opacity:.5; stroke:var(--glow)}
+  36%,60%{stroke-opacity:.95; stroke:#6d8b97}80%,100%{stroke-opacity:.5; stroke:var(--glow)}}
+.snout{animation:dryline 14s ease-in-out infinite}
+@keyframes dryline{0%,12%{stroke:var(--glow)}36%,60%{stroke:#5d7a85}80%,100%{stroke:var(--glow)}}
+.eye{transform-origin:76px 74px; animation:shut 14s ease-in-out infinite}
+@keyframes shut{0%,12%{transform:scaleY(1)}34%,62%{transform:scaleY(.08)}80%,100%{transform:scaleY(1)}}
+.skin{animation:dry 14s ease-in-out infinite}
+@keyframes dry{0%,12%{fill:#0f2b3c; stroke:var(--glow)}
+  36%,60%{fill:#17222a; stroke:#5d7a85}80%,100%{fill:#0f2b3c; stroke:var(--glow)}}
+
+.hero-state{position:relative; height:20px; margin-top:10px; text-align:center}
+.st{position:absolute; inset:0; font:500 11.5px/1.6 var(--mono); color:var(--silt-deep);
+  letter-spacing:.09em; opacity:0; animation:caption 14s ease-in-out infinite}
+.s1{animation-delay:0s} .s2{animation-delay:2.1s} .s3{animation-delay:5s} .s4{animation-delay:11.2s}
+@keyframes caption{0%{opacity:0}2%{opacity:1}14%{opacity:1}17%{opacity:0}100%{opacity:0}}
+
+@media (prefers-reduced-motion:reduce){
+  .water,.tard,.legs,.claws,.segs,.eye,.skin,.snout,.st,.hero-cue span{animation:none}
+  .s1{opacity:1} .s2,.s3,.s4{opacity:0}
+}
+@media(max-width:780px){
+  .hero{grid-template-columns:1fr; gap:26px; padding:30px 0 34px}
+  .hero-fig{max-width:380px; margin:0 auto}
+}
+
 /* ===================== Cards ===================== */
 .stack{display:flex;flex-direction:column;gap:22px;margin-top:26px}
 .card{background:linear-gradient(180deg,rgba(20,41,58,.82),rgba(14,32,48,.82));
@@ -117,7 +183,8 @@ button{font:600 15px/1 var(--serif); border-radius:6px; border:1px solid transpa
 .fact span{display:block;margin-top:7px;color:var(--silt);font-size:14px;line-height:1.55}
 
 /* ===================== Gauge ===================== */
-.verdict{display:flex;gap:26px;align-items:center;flex-wrap:wrap}
+.verdict{display:flex;gap:30px;align-items:flex-start;flex-wrap:wrap}
+.card--result .gauge{margin-top:4px}
 .gauge{position:relative;width:188px;height:188px;flex:0 0 auto}
 .gauge svg{transform:rotate(135deg)}
 .gauge .track{stroke:var(--rule); }
@@ -145,15 +212,35 @@ button{font:600 15px/1 var(--serif); border-radius:6px; border:1px solid transpa
 .scope{margin-top:16px;padding-top:14px;border-top:1px solid var(--rule-faint);
   font-size:13.5px; color:var(--silt-deep)}
 
+
+/* ===================== Result hierarchy =====================
+   One dominant card carries the answer; everything after it is supporting evidence and is
+   drawn lighter, so the page reads in one glance instead of as nine equal blocks. */
+.card--result{padding:30px 30px 26px; border-color:var(--rule-strong);
+  box-shadow:0 1px 0 rgba(68,211,196,.12) inset, 0 18px 50px -32px #000}
+.card--result .block{margin-top:26px; padding-top:22px; border-top:1px solid var(--rule-faint)}
+.card--result h3{margin:0 0 6px; font-size:15px; font-weight:600; color:var(--foam)}
+.card--result .lede{margin:0 0 14px; font-size:14.5px}
+.card--sub{background:rgba(14,32,48,.55); padding:20px 22px 22px}
+.card--sub h2{font-size:13px}
+.section-rule{display:flex; align-items:center; gap:14px; margin:4px 0 -4px;
+  font:500 11px/1 var(--mono); color:var(--silt-deep); letter-spacing:.16em; text-transform:uppercase}
+.section-rule::before,.section-rule::after{content:""; height:1px; background:var(--rule); flex:1}
+.section-rule span{flex:0 0 auto}
+.verdict-text .notes{margin:16px 0 0; font-size:16px}
+.card--result .scope{margin-top:24px}
+
 /* ===================== Residue ribbon ===================== */
 .ribbon{display:flex;flex-wrap:wrap;gap:1px;margin:4px 0 0;
   padding:12px; background:rgba(4,13,22,.6); border:1px solid var(--rule-faint); border-radius:6px}
-.res{width:9px;height:17px;border-radius:1.5px;opacity:.78;
+.res{width:10px;height:20px;border-radius:1.5px;opacity:.78;
   animation:rise .5s ease backwards}
 @keyframes rise{from{opacity:0;transform:translateY(5px)}}
 .res:hover{opacity:1;outline:1px solid var(--foam)}
-.ribbon.has-hits .res{opacity:.3}
-.res.hit{opacity:1 !important; height:23px; border-radius:0;
+.ribbon .res{transition:opacity .4s ease}
+.ribbon.has-hits.lit .res{opacity:.3}
+.res.hit{opacity:1 !important; border-radius:0; transition:height .3s ease, box-shadow .45s ease}
+.ribbon.lit .res.hit{height:26px;
   box-shadow:0 0 9px 1px var(--glow), inset 0 0 0 1px rgba(255,255,255,.7)}
 .hit-rule{flex-basis:100%;height:0;margin:0}
 .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;
@@ -193,7 +280,8 @@ button{font:600 15px/1 var(--serif); border-radius:6px; border:1px solid transpa
 
 /* ===================== Readout / homolog ===================== */
 .notes{font-size:16.5px;line-height:1.7;margin:0}
-.byline{margin:14px 0 0;font:400 12px/1.5 var(--mono);color:var(--silt-deep)}
+.byline{margin:16px 0 0;font:400 11.5px/1.5 var(--mono);color:var(--silt-deep);
+  padding-left:11px;border-left:1px solid var(--rule)}
 .acc{font:600 22px/1.2 var(--mono);color:var(--glow);word-break:break-all}
 .muted{color:var(--silt);font-size:14.5px;margin:8px 0 0}
 
@@ -203,14 +291,82 @@ button{font:600 15px/1 var(--serif); border-radius:6px; border:1px solid transpa
   background-size:200% 100%;animation:sh 1.3s linear infinite;margin-bottom:11px}
 .shimmer:last-child{width:62%;margin-bottom:0}
 @keyframes sh{to{background-position:-200% 0}}
-.fade{animation:fade .5s ease backwards}
-@keyframes fade{from{opacity:0;transform:translateY(9px)}}
+.reveal{animation:reveal .36s cubic-bezier(.22,.61,.36,1) backwards;
+  animation-delay:calc(var(--r,0) * 70ms)}
+@keyframes reveal{from{opacity:0; transform:translateY(12px)}}
+.fade{animation:reveal .36s cubic-bezier(.22,.61,.36,1) backwards}
 [hidden]{display:none !important}
 footer{margin-top:34px;padding-top:18px;border-top:1px solid var(--rule-faint);
   display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
   font-size:13.5px;color:var(--silt-deep)}
 footer .mono{font-size:12px}
-@media(max-width:560px){.shell{padding:28px 14px 70px} .card{padding:19px 17px 21px} .stamp{text-align:left}}
+/* ===================== Narrow viewports =====================
+   Mobile-first would be the better architecture, but this page was written desktop-first;
+   rather than pretend otherwise, these are explicit overrides tested at 320/375/414/768.
+   Touch targets are raised to 44px here, which is where they actually matter. */
+@media(max-width:860px){
+  .verdict{gap:20px}
+  .row{gap:16px}
+  .chars{grid-template-columns:1fr; gap:16px}
+}
+@media(max-width:620px){
+  .shell{padding:22px 16px 64px}
+  .masthead{gap:14px; padding-bottom:14px}
+  .mark{width:64px;height:40px}
+  h1{font-size:34px}
+  .tagline{font-size:15px}
+  .stamp{text-align:left; font-size:11px; flex-basis:100%}
+  .hero{padding:24px 0 28px}
+  .hero-line{font-size:26px}
+  .hero-sub{font-size:15.5px}
+  .card,.card--sub{padding:17px 15px 19px}
+  .card--result{padding:20px 15px 20px}
+  .card--result .block{margin-top:20px; padding-top:18px}
+
+  /* Full-width controls beat a row of cramped chips on a phone. */
+  .bar-row{gap:9px}
+  .primary{flex:1 1 100%; font-size:16px}
+  .chip{flex:1 1 calc(33.333% - 6px); text-align:center; padding:0 6px}
+  .count{flex:1 1 100%; margin-left:0; text-align:right}
+  textarea{min-height:112px; font-size:12.5px; letter-spacing:.04em}
+
+  /* The dial carries the answer, so it stays legible rather than shrinking out of the way. */
+  .gauge{width:154px;height:154px; margin:0 auto}
+  .gauge svg{width:154px;height:154px}
+  .gauge-num{font-size:38px}
+  .verdict{justify-content:center}
+  .verdict-text{flex-basis:100%}
+  .call{min-height:40px}
+
+  /* A smaller cell keeps a 200-residue protein on three or four lines instead of ten. */
+  .res{width:7px;height:16px}
+  .ribbon.lit .res.hit{height:21px}
+  .ribbon{padding:9px; gap:1px}
+  .legend{gap:10px; font-size:11px}
+
+  .motif{flex-direction:column; gap:5px; padding:9px 11px}
+  .motif .what{flex:0 1 auto; font-size:13.5px}
+  .byline{font-size:11px}
+  .steps,.facts{gap:20px}
+  .fact b{font-size:22px}
+  footer{flex-direction:column; gap:8px}
+  a{padding:2px 0}                       /* a slightly taller hit area on inline links */
+}
+/* Touch sizing belongs to the input device, not the viewport width: a 768px tablet in
+   portrait is still a finger. Inline links inside a paragraph are left alone — WCAG 2.5.8
+   exempts them, and padding one to 44px would wreck the line height around it. */
+@media (pointer:coarse){
+  .primary{min-height:48px; padding:12px 22px}
+  .chip{min-height:44px; display:inline-flex; align-items:center; justify-content:center}
+  footer a{display:inline-flex; align-items:center; min-height:44px}
+  .legend span{min-height:24px}
+}
+@media(max-width:360px){
+  .chip{flex:1 1 100%}
+  .hero-line{font-size:23px}
+  .res{width:6px;height:14px}
+  .gauge-num{font-size:34px}
+}
 </style>
 </head>
 <body>
@@ -234,6 +390,76 @@ footer .mono{font-size:12px}
       <div id="stamp-status">checking model…</div>
     </div>
   </header>
+
+  <section class="hero">
+    <div class="hero-copy">
+      <h2 class="hero-line">A tardigrade can lose <em>nearly all</em> of its water,
+        stop, and come back.</h2>
+      <p class="hero-sub">A handful of protein families make that possible — they turn the inside of
+        the cell into glass instead of letting it shatter. AnHydra reads a protein sequence and tells
+        you whether it looks like one of them.</p>
+      <p class="hero-cue">Paste a sequence below <span aria-hidden="true">↓</span></p>
+    </div>
+
+    <figure class="hero-fig" aria-label="A tardigrade drying into a tun and rehydrating, on a loop">
+      <svg viewBox="0 0 260 186" role="img">
+        <title>A tardigrade losing its water, curling into a tun, and reviving</title>
+        <defs>
+          <radialGradient id="drop" cx="50%" cy="46%">
+            <stop offset="0%"   stop-color="#1d5068" stop-opacity=".9"/>
+            <stop offset="65%"  stop-color="#113246" stop-opacity=".5"/>
+            <stop offset="100%" stop-color="#0b2334" stop-opacity="0"/>
+          </radialGradient>
+          <clipPath id="bodyclip"><path d="M52 88c0-24 14-37 40-39l76-2c30-2 44 15 44 39s-14 41-44 39
+            l-76-2c-26-2-40-11-40-35z"/></clipPath>
+        </defs>
+
+        <!-- The water it lives in. Leaves first, comes back last. -->
+        <g class="water">
+          <circle cx="132" cy="90" r="88" fill="url(#drop)"/>
+          <circle cx="132" cy="90" r="86" fill="none" stroke="var(--glow)" stroke-opacity=".22"
+                  stroke-width="1.6"/>
+          <g stroke="var(--glow)" stroke-opacity=".3" stroke-width="1.5" fill="none">
+            <path d="M62 38q16-10 32 0t32 0 32 0"/>
+            <path d="M54 146q18 10 36 0t36 0 36 0"/>
+          </g>
+        </g>
+
+        <g class="tard" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <!-- Four pairs of stubby legs; the hindmost points backwards, as they really do. -->
+          <g class="legs" stroke="var(--glow-deep)" stroke-width="8">
+            <path d="M84 124v17"/><path d="M114 127v18"/><path d="M144 127v18"/>
+            <path d="M176 122l14 14"/>
+          </g>
+          <g class="claws" stroke="var(--glow-deep)" stroke-width="2.4">
+            <path d="M79 143l-6 6M89 143l6 6"/><path d="M109 147l-6 6M119 147l6 6"/>
+            <path d="M139 147l-6 6M149 147l6 6"/><path d="M188 138l-1 9M193 134l8 2"/>
+          </g>
+
+          <path class="skin" d="M52 88c0-24 14-37 40-39l76-2c30-2 44 15 44 39s-14 41-44 39l-76-2
+                                c-26-2-40-11-40-35z"
+                fill="#0f2b3c" stroke="var(--glow)" stroke-width="3.6"/>
+
+          <!-- Segment creases, clipped so they never escape the body. -->
+          <g class="segs" clip-path="url(#bodyclip)" stroke="var(--glow)" stroke-opacity=".5"
+             stroke-width="2.2" fill="none">
+            <path d="M96 42q7 46 1 92"/><path d="M126 40q7 48 1 94"/>
+            <path d="M156 40q7 48 1 94"/><path d="M186 44q6 44 0 88"/>
+          </g>
+
+          <!-- Snout and eye. -->
+          <path class="snout" d="M53 80q-12 1-17 8" stroke="var(--glow)" stroke-width="3.6"/>
+          <circle class="eye" cx="72" cy="74" r="3.8" fill="var(--glow)" stroke="none"/>
+        </g>
+      </svg>
+      <figcaption class="hero-state">
+        <span class="st s1">hydrated · active</span>
+        <span class="st s2">water leaving</span>
+        <span class="st s3">a tun · metabolism stopped</span>
+        <span class="st s4">rehydrated · walking away</span>
+      </figcaption>
+    </figure>
+  </section>
 
   <div class="stack">
     <div class="card" id="input-card">
@@ -297,8 +523,9 @@ footer .mono{font-size:12px}
 
     <div id="results" aria-live="polite" hidden class="stack">
 
-      <div class="card fade">
-        <h2>Determination</h2>
+      <!-- The answer. One card, because it is one thought: the score, what it means in
+           words, and the picture of the sequence that backs it up. -->
+      <div class="card card--result reveal" style="--r:0">
         <div class="verdict">
           <div class="gauge" id="gauge">
             <svg width="188" height="188" viewBox="0 0 188 188" aria-hidden="true">
@@ -322,43 +549,47 @@ footer .mono{font-size:12px}
               <div class="gauge-num" id="score">—</div>
               <div class="gauge-cap">family score</div>
             </div>
-            <div class="gauge-mark">0.50
-            </div>
+            <div class="gauge-mark">0.50</div>
           </div>
           <div class="verdict-text">
             <span class="call" id="call"><span class="dot"></span><span id="call-text"></span></span>
             <p id="verdict-line"></p>
-            <p class="scope">The score reflects how strongly the model associates this sequence with
-              the desiccation-protective families — CAHS, LEA, dehydrins. It is not a measure of how
-              much the protein protects. Read it as a ranking for what to test next.</p>
+            <p class="notes" id="explanation"></p>
+            <p class="byline" id="byline"></p>
           </div>
         </div>
-      </div>
 
-      <div class="card fade">
-        <h2>Residue map</h2>
-        <p class="lede">Every residue in the sequence, coloured by chemistry. Protective IDPs tend to
-          look like this: almost no hydrophobic core, heavy charge, long repetitive runs.</p>
-        <div class="ribbon" id="ribbon"></div>
-        <div class="legend">
-          <span><i style="background:var(--acidic)"></i>acidic D E</span>
-          <span><i style="background:var(--basic)"></i>basic K R H</span>
-          <span><i style="background:var(--polar)"></i>polar S T N Q C Y</span>
-          <span><i style="background:var(--phobic)"></i>hydrophobic A V L I M F W</span>
-          <span><i style="background:var(--special)"></i>flexible G P</span>
-          <span id="ribbon-note"></span>
+        <div class="block">
+          <h3>Residue map</h3>
+          <p class="lede">Every residue, coloured by chemistry. Protective proteins look like this:
+            almost no hydrophobic core, heavy charge, long repetitive runs.</p>
+          <div class="ribbon" id="ribbon"></div>
+          <div class="legend">
+            <span><i style="background:var(--acidic)"></i>acidic D E</span>
+            <span><i style="background:var(--basic)"></i>basic K R H</span>
+            <span><i style="background:var(--polar)"></i>polar S T N Q C Y</span>
+            <span><i style="background:var(--phobic)"></i>hydrophobic A V L I M F W</span>
+            <span><i style="background:var(--special)"></i>flexible G P</span>
+            <span id="ribbon-note"></span>
+          </div>
         </div>
+
+        <div class="block">
+          <h3>Known motifs in this sequence</h3>
+          <p class="lede">Literal matches to the dehydrin K-segment — the motif our CNN reconstructed
+            from scratch, with no motif database — and to the glycine/serine repeats that
+            characterise tardigrade CAHS proteins. Both are highlighted in the map above.</p>
+          <ul class="motif-list" id="motifs"></ul>
+        </div>
+
+        <p class="scope">The score is how strongly the model associates this sequence with the
+          desiccation-protective families — CAHS, LEA, dehydrins. It is not a measure of how much the
+          protein protects. Read it as a ranking for what to test next.</p>
       </div>
 
-      <div class="card fade">
-        <h2>Known motifs found in this sequence</h2>
-        <p class="lede">Our CNN rediscovered the dehydrin K-segment from scratch, with no motif
-          database. These are literal matches to that motif and to the glycine/serine repeats that
-          characterise tardigrade CAHS proteins — highlighted in the map above.</p>
-        <ul class="motif-list" id="motifs"></ul>
-      </div>
+      <p class="section-rule"><span>the evidence behind it</span></p>
 
-      <div class="card fade">
+      <div class="card card--sub reveal" style="--r:1">
         <h2>What drove this call</h2>
         <p class="lede">The three strongest contributions from the interpretable biophysical model
           that runs alongside the language model. Right of centre argues for protective; left argues
@@ -367,26 +598,20 @@ footer .mono{font-size:12px}
         <div class="axis"><span>← argues against</span><span>argues for →</span></div>
       </div>
 
-      <div class="card fade">
-        <h2>Readout</h2>
-        <p class="notes" id="explanation"></p>
-        <p class="byline" id="byline"></p>
-      </div>
-
       <div class="row">
-        <div class="card fade">
+        <div class="card card--sub reveal" style="--r:2">
           <h2>Nearest protective sequence</h2>
           <p class="acc" id="homolog">—</p>
           <p class="muted" id="homolog-note"></p>
         </div>
-        <div class="card fade">
+        <div class="card card--sub reveal" style="--r:3">
           <h2>Specimen</h2>
           <p class="acc" id="spec-len">—</p>
           <p class="muted">standard residues scored, after removing whitespace and an optional FASTA header. Inputs are limited to 1,022 residues.</p>
         </div>
       </div>
 
-      <div class="card fade">
+      <div class="card card--sub reveal" style="--r:4">
         <h2>Diagnostic characters</h2>
         <p class="lede">All nine interpretable features. The three that drove the call are marked.</p>
         <div class="chars" id="chars"></div>
@@ -614,6 +839,11 @@ function renderRibbon(seq, hits){
   }
   $("ribbon").innerHTML = cells.join("");
   $("ribbon").classList.toggle("has-hits", hits.length > 0);
+  // Let the map finish drawing before the motif hits light up — two beats, not one.
+  const sweep = Math.min(shown * 1.4, 700) + 380;
+  $("ribbon").classList.remove("lit");
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) $("ribbon").classList.add("lit");
+  else setTimeout(() => $("ribbon").classList.add("lit"), sweep);
   $("ribbon-note").textContent = seq.length > MAX_RIBBON
     ? `showing the first ${MAX_RIBBON} of ${seq.length} residues` : "";
 }
