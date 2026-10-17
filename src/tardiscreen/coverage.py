@@ -40,17 +40,13 @@ def _span(region: dict) -> tuple[int, int] | None:
     return (start, end) if end >= start else (end, start)
 
 
-def disorder_fraction(entry: dict, seq_len: int) -> tuple[float, int]:
-    """Fraction of residues covered by at least one annotated region, and the region count.
+def _merge_fraction(spans: list[tuple[int, int]], seq_len: int) -> float:
+    """Fraction of residues covered by at least one span.
 
-    Regions overlap, so merge them before summing — adding raw lengths would double-count and can
-    exceed 1.0.
+    Spans overlap, so merge them before summing — adding raw lengths double-counts and can exceed 1.
     """
-    spans = [s for s in (_span(r) for r in (entry.get("regions") or [])
-                         if isinstance(r, dict)) if s]
     if not spans or seq_len <= 0:
-        return 0.0, len(spans)
-
+        return 0.0
     merged: list[list[int]] = []
     for start, end in sorted(spans):
         if merged and start <= merged[-1][1] + 1:
@@ -58,7 +54,89 @@ def disorder_fraction(entry: dict, seq_len: int) -> tuple[float, int]:
         else:
             merged.append([start, end])
     covered = sum(end - start + 1 for start, end in merged)
-    return min(covered / seq_len, 1.0), len(spans)
+    return min(covered / seq_len, 1.0)
+
+
+def disorder_fraction(entry: dict, seq_len: int) -> tuple[float, int]:
+    """DisProt entry -> (covered fraction, region count)."""
+    spans = [s for s in (_span(r) for r in (entry.get("regions") or [])
+                         if isinstance(r, dict)) if s]
+    return _merge_fraction(spans, seq_len), len(spans)
+
+
+def _uniprot_spans(entry: dict) -> list[tuple[int, int]]:
+    """Disordered Region features of a UniProt entry, as 1-based inclusive spans.
+
+    UniProt records disorder as features of type "Region" described "Disordered" (from MobiDB-lite),
+    so filter on the description — taking every Region would sweep in domains and repeats.
+    """
+    spans = []
+    for feat in entry.get("features", []) or []:
+        if not isinstance(feat, dict):
+            continue
+        if "disorder" not in str(feat.get("description", "")).lower():
+            continue
+        loc = feat.get("location") or {}
+        start = (loc.get("start") or {}).get("value")
+        end = (loc.get("end") or {}).get("value")
+        if start is None or end is None:
+            continue
+        try:
+            start, end = int(start), int(end)
+        except (TypeError, ValueError):
+            continue
+        spans.append((start, end) if end >= start else (end, start))
+    return spans
+
+
+def fetch_uniprot_coverage(accessions: list[str], chunk: int = 100) -> list[dict]:
+    """Disorder coverage for UniProt accessions, fetched in OR'd batches.
+
+    Batched because one request per accession would be ~1000 round trips. Uses the plain search
+    endpoint rather than a bulk route so it works across UniProt API versions.
+    """
+    from .data import _get
+
+    rows, missing = [], 0
+    for i in range(0, len(accessions), chunk):
+        batch = accessions[i:i + chunk]
+        resp = _get("https://rest.uniprot.org/uniprotkb/search",
+                    params={"query": " OR ".join(f"accession:{a}" for a in batch),
+                            "fields": "accession,length,ft_region",
+                            "format": "json", "size": str(chunk)},
+                    headers={"Accept": "application/json"})
+        if not resp:
+            missing += len(batch)
+            continue
+        try:
+            results = resp.json().get("results", [])
+        except ValueError:
+            missing += len(batch)
+            continue
+        for entry in results:
+            acc = entry.get("primaryAccession", "")
+            seq_len = int(entry.get("sequence", {}).get("length")
+                          or len(entry.get("sequence", {}).get("value", "")) or 0)
+            spans = _uniprot_spans(entry)
+            rows.append(dict(sequence_id=acc,
+                             disorder_fraction=round(_merge_fraction(spans, seq_len), 4),
+                             n_regions=len(spans), length=seq_len))
+        print(f"  [uniprot] {min(i + chunk, len(accessions))}/{len(accessions)} accessions")
+    if missing:
+        print(f"  [uniprot] WARNING: {missing} accessions in failed batches")
+    return rows
+
+
+def _describe(name: str, frac) -> None:
+    """One-line distribution summary plus the fraction above each threshold."""
+    import numpy as np
+
+    if len(frac) == 0:
+        print(f"  {name:>12}: no rows")
+        return
+    q = np.percentile(frac, [25, 50, 75])
+    above = "  ".join(f">={t:.1f}: {float((frac >= t).mean()):.0%}" for t in THRESHOLDS)
+    print(f"  {name:>12}: n={len(frac):<5} median {q[1]:.2f}  (IQR {q[0]:.2f}-{q[2]:.2f})   {above}")
 
 
 def main():
@@ -124,6 +202,41 @@ def main():
         print(f"    >= {t:.1f} disordered: {int((frac >= t).sum()):>5}")
     print("\n  Read: a threshold that leaves a few hundred genuinely-disordered negatives gives the"
           "\n  honest task. These sequences are already embedded, so re-evaluating costs seconds.")
+
+    # --- the positives, so filtering negatives on disorder can't invert the confound -------------
+    print("\n" + "=" * 78)
+    print("POSITIVES — how disordered are the protective proteins themselves?")
+    print("=" * 78)
+    print("  Filtering negatives on disorder while leaving positives unfiltered would make disorder"
+          "\n  separate the classes again, backwards. That needs measuring, not assuming.\n")
+
+    pos_ids = sorted(df.loc[df["label"] == "protective", "sequence_id"])
+    pos_rows = fetch_uniprot_coverage(pos_ids)
+    if not pos_rows:
+        print("  could not fetch positive coverage — leaving the negative file as written.")
+        return
+
+    pos = pd.DataFrame(pos_rows)
+    out = pd.concat([out.assign(label="other_idp"), pos.assign(label="protective")],
+                    ignore_index=True)
+    out.to_csv(OUT_PATH, index=False)
+    print(f"\n[coverage] rewrote {OUT_PATH} with both classes ({len(out)} rows)")
+
+    print("\n  side by side:")
+    _describe("protective", pos["disorder_fraction"].to_numpy())
+    _describe("other_idp", frac.to_numpy())
+
+    gap = float(pos["disorder_fraction"].median()) - float(frac.median())
+    print(f"\n  median gap (protective - negatives): {gap:+.2f}")
+    pos_hi = float((pos["disorder_fraction"] >= 0.7).mean())
+    print(f"  positives already >= 0.7 disordered: {pos_hi:.0%}")
+    if pos_hi >= 0.8:
+        print("  -> positives are themselves mostly disordered: filtering negatives at 0.7 puts"
+              "\n     both classes in the same range, so no disorder-matching is needed.")
+    else:
+        print("  -> a sizable share of positives fall below 0.7. Filtering negatives there would"
+              "\n     make the classes differ in disorder, inverting the confound. Match the"
+              "\n     negatives to the positives' distribution instead of hard-thresholding.")
 
 
 if __name__ == "__main__":
