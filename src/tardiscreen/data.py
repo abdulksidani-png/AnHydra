@@ -377,7 +377,7 @@ def cluster_sequences(records: list[Record], identity: float = 0.4) -> list[Reco
     df = df[~suspect]
 
     # 4. Deduplicate: exact sequence, then sequence_id. Keep the higher-priority label on conflicts.
-    df["_prio"] = df["label"].map(PRIORITY)
+    df["_prio"] = df["label"].map(PRIORITY).fillna(max(PRIORITY.values()) + 1)
     df = df.sort_values(["_prio", "sequence_id"])
     n = len(df)
     df = df.drop_duplicates(subset="sequence", keep="first")
@@ -418,7 +418,10 @@ def cluster_sequences(records: list[Record], identity: float = 0.4) -> list[Reco
         cap = round(NEG_RATIO * len(pos))
         rng = random.Random(_seed())
         keep_idx = list(pos.index)
-        for lbl in ("other_idp", "ordered"):
+        # Derive the negative tiers from the data: hardcoding them silently drops any label not
+        # listed (a new negative tier would vanish here with no message).
+        neg_labels = [l for l in df["label"].unique() if l != "protective"]
+        for lbl in neg_labels:
             sub = df[df["label"] == lbl]
             if len(sub) <= cap:
                 keep_idx.extend(sub.index)
