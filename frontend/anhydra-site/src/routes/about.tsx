@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { Globe } from "lucide-react";
 import settings from "@/config/settings.json";
@@ -40,28 +41,51 @@ function Widget({ href, label, children }: { href?: string; label: string; child
   );
 }
 
+// The member's GitHub profile picture, linking to their profile. Hidden if it fails to load, rather
+// than showing a broken image.
+function GithubAvatar({ member }: { member: Member }) {
+  const [failed, setFailed] = useState(false);
+  const user = member.github ? new URL(member.github).pathname.split("/")[1] : "";
+  if (!user || failed) return null;
+  return (
+    <a href={member.github} target="_blank" rel="noopener noreferrer" className="member-avatar" title={`${member.name} on GitHub`}>
+      <img
+        src={`https://github.com/${encodeURIComponent(user)}.png?size=160`}
+        alt={`${member.name}'s GitHub profile picture`}
+        width={72}
+        height={72}
+        loading="lazy"
+        onError={() => setFailed(true)}
+      />
+    </a>
+  );
+}
+
 function MemberCard({ member }: { member: Member }) {
   return (
-    <li className="card flex flex-col gap-4">
-      <h3>{member.name}</h3>
-      <div className="flex flex-wrap gap-2">
-        <Widget href={member.github} label={`${member.name} on GitHub`}>
-          <GithubMark />
-        </Widget>
-        <Widget href={member.linkedin} label={`${member.name} on LinkedIn`}>
-          <LinkedinMark />
-        </Widget>
-        <Widget href={member.website} label={`${member.name}'s website`}>
-          <Globe size={20} aria-hidden="true" />
-        </Widget>
+    <li className="card flex items-center justify-between gap-4">
+      <div className="flex min-w-0 flex-col gap-4">
+        <h3>{member.name}</h3>
+        <div className="flex flex-wrap gap-2">
+          <Widget href={member.github} label={`${member.name} on GitHub`}>
+            <GithubMark />
+          </Widget>
+          <Widget href={member.linkedin} label={`${member.name} on LinkedIn`}>
+            <LinkedinMark />
+          </Widget>
+          <Widget href={member.website} label={`${member.name}'s website`}>
+            <Globe size={20} aria-hidden="true" />
+          </Widget>
+        </div>
       </div>
+      <GithubAvatar member={member} />
     </li>
   );
 }
 
 function AboutPage() {
   return (
-    <main className="page about flex flex-col gap-12 pb-16">
+    <main className="page about flex flex-col gap-12">
       <section aria-labelledby="built-with" className="flex flex-col items-center gap-4 text-center">
         <h2 id="built-with">Built with</h2>
         <ul className="m-0 flex list-none flex-wrap justify-center gap-2 p-0">
@@ -101,11 +125,10 @@ function AboutPage() {
             <MemberCard key={m.name} member={m} />
           ))}
         </ul>
+        <p className="privacy-link muted small text-center">
+          <Link to="/privacy">Privacy</Link>
+        </p>
       </section>
-
-      <p className="muted small text-center">
-        <Link to="/privacy">Privacy</Link>
-      </p>
     </main>
   );
 }
