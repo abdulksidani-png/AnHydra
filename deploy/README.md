@@ -48,7 +48,9 @@ that quota. On the server, from the checkout:
    dependencies into the existing environment: `.venv/bin/pip install -e .`
 2. Add `PUBLIC_ACCESS=true` to the checkout's `.env` and restart: `systemctl restart tardiscreen`.
    Check `curl --fail http://127.0.0.1:8000/health`.
-3. Build the site (Node 20 or newer): `cd frontend/anhydra-site && npm ci && npm run build`.
+3. Pick the example buttons from the training data, then build the site (Node 20 or newer):
+   `.venv/bin/python scripts/pick_examples.py > frontend/anhydra-site/public/examples.json`, then
+   `cd frontend/anhydra-site && npm ci && npm run build`.
    Copy it into place: `mkdir -p /var/www/anhydra-site && cp -r dist/. /var/www/anhydra-site/`.
 4. Back up `/etc/caddy/Caddyfile`, replace the AnHydra block with `deploy/Caddyfile.site`,
    then `caddy validate --config /etc/caddy/Caddyfile` and `systemctl reload caddy`.

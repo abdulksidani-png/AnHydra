@@ -4,14 +4,14 @@ import settings from "@/config/settings.json";
 import { Tour, useTour } from "@/components/Tour";
 import { Answer, Drivers, ResidueMap, FeatureBars, Skeleton, Specimen, useReducedMotion } from "@/components/Result";
 import { Ensemble } from "@/components/Ensemble";
-import { DEMO_MS, demoFor } from "@/lib/demo";
 import { EmbeddingMap, NearestOnly, StructurePanel } from "@/components/Evidence";
 import {
-  EXAMPLES,
   ScoreError,
   cleanSequence,
+  loadExamples,
   requestHealth,
   requestScore,
+  type Example,
   type Health,
   type ScoreResult,
 } from "@/lib/protein";
@@ -34,8 +34,8 @@ function ScreenPage() {
   const [fail, setFail] = useState<Fail | null>(null);
   const [health, setHealth] = useState<Health | null>(null);
   const [checked, setChecked] = useState(false);
+  const [examples, setExamples] = useState<Example[]>([]);
   const [runId, setRunId] = useState(0);
-  const [demoScore, setDemoScore] = useState<number | undefined>(undefined);
   const area = useRef<HTMLTextAreaElement | null>(null);
   const resultRef = useRef<HTMLDivElement | null>(null);
   const abort = useRef<AbortController | null>(null);
@@ -46,6 +46,9 @@ function ScreenPage() {
       if (!live) return;
       setHealth(h);
       setChecked(true);
+    });
+    loadExamples().then((list) => {
+      if (live) setExamples(list);
     });
     return () => {
       live = false;
@@ -76,23 +79,7 @@ function ScreenPage() {
     setBusy(true);
     setFail(null);
     setResult(null);
-    const demo = demoFor(text);
-    setDemoScore(demo?.score);
     try {
-      if (demo) {
-        await new Promise<void>((res, rej) => {
-          const id = window.setTimeout(res, reduced ? 600 : DEMO_MS);
-          ac.signal.addEventListener("abort", () => {
-            window.clearTimeout(id);
-            rej(new DOMException("aborted", "AbortError"));
-          });
-        });
-        setShownSeq(seq);
-        setResult(demo);
-        setRunId((n) => n + 1);
-        window.setTimeout(() => resultRef.current?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" }), 50);
-        return;
-      }
       const r = await requestScore(text.trim(), ac.signal);
       setShownSeq(seq);
       setResult(r);
@@ -109,13 +96,7 @@ function ScreenPage() {
   };
 
   const phase =
-    demoScore !== undefined
-      ? elapsed >= 2400
-        ? "Scoring (simulated)…"
-        : elapsed >= 1200
-          ? "Comparing against known protective sequences (simulated)…"
-          : "Embedding with ESM-2 (simulated)…"
-      : elapsed >= 8000
+    elapsed >= 8000
       ? "First request after a restart — loading the model into memory…"
       : elapsed >= 2000
         ? "Embedding with ESM-2…"
@@ -175,19 +156,22 @@ function ScreenPage() {
               </button>
             </div>
             <div className="chips" role="group" aria-label="Example sequences">
-              <span className="muted small">Examples (illustrative sequences written for this demo, not database entries):</span>
-              {EXAMPLES.map((ex) => (
+              <span className="muted small">
+                {examples.length ? "Examples from the training data:" : "No examples on this server; paste a sequence."}
+              </span>
+              {examples.map((ex) => (
                 <button
                   type="button"
                   key={ex.id}
                   className="chip"
+                  title={`${ex.name} (UniProt ${ex.accession})`}
                   onClick={() => {
                     setText(ex.seq);
                     setFail(null);
                     area.current?.focus();
                   }}
                 >
-                  {ex.label}
+                  {ex.label} · {ex.accession}
                 </button>
               ))}
             </div>
@@ -210,7 +194,7 @@ function ScreenPage() {
         </section>
 
         <div ref={resultRef} className="result-zone">
-          {busy ? <Skeleton phase={phase} demoScore={demoScore} reduced={reduced} /> : null}
+          {busy ? <Skeleton phase={phase} /> : null}
           {!busy && result ? (
             <div key={runId}>
               <Answer result={result} seq={shownSeq} reduced={reduced} />

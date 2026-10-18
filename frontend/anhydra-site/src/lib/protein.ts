@@ -8,7 +8,6 @@ export type ScoreResult = {
   features: Record<string, number>;
   explanation?: string;
   neighbours?: Neighbour[];
-  demo?: boolean;
 };
 
 export type Health = { status: string; model_trained: boolean };
@@ -165,23 +164,27 @@ export function uniprotUrl(accession: string): string {
   return `https://www.uniprot.org/uniprotkb/${encodeURIComponent(accession)}`;
 }
 
-export const EXAMPLES = [
-  {
-    id: "dehydrin",
-    label: "Dehydrin",
-    seq: "MAGIMDEYGNPVQHTGEYGNPVHRTGEHGTTGMGTGTGEYGTGTHGAGTGEYGRPVGTGGEYGHPVQEKDGFLDKIKEKLPGQHDSSGSDSDEEVVKKEKKKGIMDKIKEKLPGHH",
-  },
-  {
-    id: "cahs",
-    label: "CAHS-like",
-    seq: "MAEQNEEKLKQAEEAGKSQETIDSLNKQTGSEEGKKDGSGSSGGSGSGGSAGSSGGSGSNEQKAEEALHKAEEKLAEAQKEHGSKEEAAKKAEEARQELEKAHGGSGSSGSGGDSEKK",
-  },
-  {
-    id: "folded",
-    label: "Folded control",
-    seq: "MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG",
-  },
-];
+export type Example = { id: string; label: string; accession: string; name: string; seq: string };
+
+// examples.json is written at deploy time by scripts/pick_examples.py from the training data, so the
+// buttons always show real proteins. Without it (local dev, previews) the page simply has none.
+export async function loadExamples(): Promise<Example[]> {
+  try {
+    const res = await fetch(`${API_BASE}/examples.json`);
+    if (!res.ok) return [];
+    const list: unknown = await res.json();
+    if (!Array.isArray(list)) return [];
+    return list.filter(
+      (e): e is Example =>
+        !!e &&
+        typeof e === "object" &&
+        ["id", "label", "accession", "name", "seq"].every((k) => typeof (e as Record<string, unknown>)[k] === "string") &&
+        /^[A-Z]+$/.test((e as Example).seq),
+    );
+  } catch {
+    return [];
+  }
+}
 
 export class ScoreError extends Error {
   status: number;

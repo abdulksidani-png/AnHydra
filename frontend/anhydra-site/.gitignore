@@ -4,3 +4,4 @@ dist/
 .env.*.local
 .tanstack/
 .DS_Store
+public/examples.json
