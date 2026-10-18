@@ -63,7 +63,7 @@ function GithubAvatar({ member }: { member: Member }) {
 
 function MemberCard({ member }: { member: Member }) {
   return (
-    <li className="card flex items-center justify-between gap-4">
+    <li className="card grid grid-cols-[auto_1fr] items-center gap-4">
       <div className="flex min-w-0 flex-col gap-4">
         <h3>{member.name}</h3>
         <div className="flex flex-wrap gap-2">
@@ -119,7 +119,7 @@ function AboutPage() {
       </section>
 
       <section aria-labelledby="team" className="flex flex-col gap-4">
-        <h2 id="team">Get in touch</h2>
+        <h2 id="team">Get in touch:</h2>
         <ul className="m-0 grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 lg:grid-cols-4">
           {TEAM.map((m) => (
             <MemberCard key={m.name} member={m} />

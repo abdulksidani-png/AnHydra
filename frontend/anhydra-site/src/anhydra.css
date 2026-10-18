@@ -573,6 +573,7 @@ body { background: transparent; }
 /* about: GitHub picture beside each team card, and only a little room below the cards */
 .page.about { padding-bottom: 2rem; }
 .about .privacy-link { margin: 0; }
-.member-avatar { flex: none; display: block; width: 72px; height: 72px; border-radius: 50%; overflow: hidden; border: 1px solid #3a3b3d; transition: border-color 180ms; }
+.about .privacy-link a { color: var(--foam); }
+.member-avatar { justify-self: center; display: block; width: 72px; height: 72px; border-radius: 50%; overflow: hidden; border: 1px solid #3a3b3d; transition: border-color 180ms; }
 .member-avatar:hover, .member-avatar:focus-visible { border-color: var(--foam); }
 .member-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
