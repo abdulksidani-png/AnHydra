@@ -12,13 +12,15 @@ from app.database import database_engine
 @pytest.fixture
 def authorized_app():
     """Only inference regression tests bypass auth; auth tests exercise real verification."""
-    from app.auth import authenticated_user
+    from app.auth import authenticated_user, scoring_user
     from app.main import app
-    app.dependency_overrides[authenticated_user] = lambda: {"id": "test-user"}
+    for dependency in (authenticated_user, scoring_user):
+        app.dependency_overrides[dependency] = lambda: {"id": "test-user"}
     try:
         yield app
     finally:
-        app.dependency_overrides.pop(authenticated_user, None)
+        for dependency in (authenticated_user, scoring_user):
+            app.dependency_overrides.pop(dependency, None)
 
 
 @pytest.fixture

@@ -28,7 +28,7 @@ from pydantic import BaseModel
 from tardiscreen.explain import explain
 from tardiscreen.features import AA, clean_sequence, compute_features
 from tardiscreen.model import MODELS_PATH, predict, load_bundle
-from app.auth import KeyCache, TokenVerifier, authenticated_user
+from app.auth import KeyCache, TokenVerifier, authenticated_user, scoring_user
 from app.database import UserStore, database_engine
 from app.logging_safety import install_redaction
 from app.settings import Settings
@@ -140,7 +140,7 @@ def parse_sequence(raw: str) -> str:
 
 
 @app.post("/score", response_model=ScoreResponse)
-def score(req: ScoreRequest, user=Depends(authenticated_user)) -> ScoreResponse:
+def score(req: ScoreRequest, user=Depends(scoring_user)) -> ScoreResponse:
     """Score one sequence with the trained ESM-2 model."""
     seq = parse_sequence(req.sequence)
     if not MODELS_PATH.exists():
