@@ -317,6 +317,35 @@ def test_exact_cors_and_development_startup(monkeypatch):
         assert "access-control-allow-origin" not in response.headers
 
 
+def test_public_access_runs_production_without_sign_in(monkeypatch):
+    for name in ("AUTH0_ISSUER", "AUTH0_AUDIENCE", "AUTH0_CLAIM_NAMESPACE", "DATABASE_URL", "CORS_ORIGINS"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.setenv("AUTH_DEV_ANONYMOUS", "false")
+    monkeypatch.setenv("PUBLIC_ACCESS", "true")
+    previous = app.state._state.copy()
+    app.state._state.clear()
+    try:
+        with TestClient(app) as client, patch("app.main.MODELS_PATH") as models:
+            assert app.state.settings.anonymous
+            assert not hasattr(app.state, "verifier") and not hasattr(app.state, "users")
+            models.exists.return_value = False
+            response = client.post("/score", json={"sequence": "A" * 40})
+    finally:
+        app.state._state.clear()
+        app.state._state.update(previous)
+    assert response.status_code == 503  # past admission, stopped only by the missing model
+
+
+def test_public_access_is_off_unless_asked_for(monkeypatch):
+    set_config(monkeypatch)
+    monkeypatch.delenv("PUBLIC_ACCESS", raising=False)
+    assert not Settings.from_env().anonymous
+    monkeypatch.setenv("PUBLIC_ACCESS", "yes")
+    with pytest.raises(ValueError):
+        Settings.from_env()
+
+
 def test_public_health(api):
     assert api.get("/health").status_code == 200
 

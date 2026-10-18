@@ -44,5 +44,5 @@ src/
 
 ## Deploying
 
-`npm run build`, then have Caddy serve `dist/` with a fallback to `index.html` for client-side routes, and proxy
-`/score`, `/health`, `/me` and `/ready` to uvicorn.
+The site has no sign-in, so the backend runs with `PUBLIC_ACCESS=true`. The steps for anhydra.work, including
+the Caddy config (`deploy/Caddyfile.site`), are in [deploy/README.md](../../deploy/README.md).

@@ -101,7 +101,7 @@ ANONYMOUS_USER = dict(id=UUID("00000000-0000-0000-0000-000000000001"), display_n
 
 
 def _verified_claims(request: Request):
-    """Return verified token claims, or None in explicit anonymous development mode."""
+    """Return verified token claims, or None when sign-in is off (PUBLIC_ACCESS or the dev bypass)."""
     settings = getattr(request.app.state, "settings", None)
     if settings is None:
         raise HTTPException(503, "Authentication is unavailable.")

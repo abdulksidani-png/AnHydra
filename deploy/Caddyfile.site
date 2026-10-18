@@ -1,0 +1,14 @@
+# The AnHydra site (frontend/anhydra-site) on the real domain. Caddy serves the built site from
+# /var/www/anhydra-site and passes the API routes to uvicorn. Replaces the Caddyfile.anhydra block.
+anhydra.work, www.anhydra.work, http://64.177.42.245 {
+    encode zstd gzip
+    @api path /score /health /ready /me /docs /docs/* /redoc /openapi.json
+    handle @api {
+        reverse_proxy 127.0.0.1:8000
+    }
+    handle {
+        root * /var/www/anhydra-site
+        try_files {path} /index.html
+        file_server
+    }
+}

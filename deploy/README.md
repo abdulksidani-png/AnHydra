@@ -37,6 +37,26 @@ cache at `/var/cache/tardiscreen/huggingface`. Do not change ownership of the
 active dataset or model files. Systemd reads the optional checkout `.env` before
 starting the app; restart the service after changing that environment file.
 
+## Serving the AnHydra site without sign-in
+
+`frontend/anhydra-site` is the site built in Duda. It has no sign-in, so the backend
+runs with `PUBLIC_ACCESS=true`: `/score` is open to everyone and Auth0 and PostgreSQL
+are not needed. Every score also calls Gemini with the server's key, so anyone can spend
+that quota. On the server, from the checkout:
+
+1. Update the checkout to the branch with the site, then install the backend's current
+   dependencies into the existing environment: `.venv/bin/pip install -e .`
+2. Add `PUBLIC_ACCESS=true` to the checkout's `.env` and restart: `systemctl restart tardiscreen`.
+   Check `curl --fail http://127.0.0.1:8000/health`.
+3. Build the site (Node 20 or newer): `cd frontend/anhydra-site && npm ci && npm run build`.
+   Copy it into place: `mkdir -p /var/www/anhydra-site && cp -r dist/. /var/www/anhydra-site/`.
+4. Back up `/etc/caddy/Caddyfile`, replace the AnHydra block with `deploy/Caddyfile.site`,
+   then `caddy validate --config /etc/caddy/Caddyfile` and `systemctl reload caddy`.
+5. Open the domain, check Home, Screen and About, and screen a pasted sequence.
+
+To go back, restore the Caddyfile backup and reload Caddy. Removing `PUBLIC_ACCESS`
+puts sign-in back on, which needs the Auth0 and database settings in AUTH.md.
+
 ## Verified deployment, October 17, 2026
 
 - Host: `64.177.42.245`, checkout `/root/tardiscreen`, revision `26c3a12`.
