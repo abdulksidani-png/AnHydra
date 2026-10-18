@@ -574,6 +574,9 @@ body { background: transparent; }
 .page.about { padding-bottom: 2rem; }
 .about .privacy-link { margin: 0; }
 .about .privacy-link a { color: var(--foam); }
-.member-avatar { justify-self: center; display: block; width: 72px; height: 72px; border-radius: 50%; overflow: hidden; border: 1px solid #3a3b3d; transition: border-color 180ms; }
+/* The picture is centred between the right edge of the three link buttons (3 x 44px + 2 x 8px = 148px
+   after the card's 1.25rem padding) and the card's right border, and shrinks on narrow cards. */
+.member-avatar-slot { position: absolute; top: 0; bottom: 0; right: 0; left: calc(1.25rem + 148px); display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.member-avatar { pointer-events: auto; display: block; width: min(100px, calc(100% - 16px)); aspect-ratio: 1; border-radius: 50%; overflow: hidden; border: 1px solid #3a3b3d; transition: border-color 180ms; }
 .member-avatar:hover, .member-avatar:focus-visible { border-color: var(--foam); }
 .member-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
