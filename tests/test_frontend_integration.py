@@ -50,7 +50,8 @@ def test_frontend_proxy_and_backend_contract(database, monkeypatch, tmp_path):
         conn.execute(text("UPDATE app_users SET status='disabled' WHERE id=:id"), disabled)
     model_file = tmp_path / "fixture-model"
     model_file.touch()
-    predict = Mock(return_value=SimpleNamespace(score=.7, label="protective", nearest_homolog=None, top_features=[]))
+    predict = Mock(return_value=SimpleNamespace(score=.7, label="protective", nearest_homolog=None,
+                                                top_features=[], neighbours=[]))
     monkeypatch.setattr(main, "MODELS_PATH", model_file)
     monkeypatch.setattr(main, "predict", predict)
     monkeypatch.setattr(main, "explain", lambda *args: "Controlled integration fixture")
