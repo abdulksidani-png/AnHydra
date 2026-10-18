@@ -178,3 +178,68 @@ def test_page_is_served_from_disk():
     # The page is useless if it cannot reach the API or render the fields the API returns.
     for needed in ('fetch("/score"', 'fetch("/health")', "top_features", "nearest_homolog"):
         assert needed in page, needed
+
+
+def test_neighbours_are_ranked_and_labelled(tmp_path, monkeypatch):
+    """The neighbour map is drawn from these, so order and range have to hold.
+
+    Family labels are read from data/families.csv at serve time rather than baked into the
+    bundle, so a bundle trained before families existed must still come back labelled.
+    """
+    import types
+
+    import joblib
+    import numpy as np
+    import pandas as pd
+
+    from tardiscreen import model as M
+
+    monkeypatch.setattr(M, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(M, "MODELS_PATH", tmp_path / "models.joblib")
+    M._load_bundle.cache_clear()
+    M._family_labels.cache_clear()
+
+    rng = np.random.default_rng(0)
+    n, d = 40, 16
+    X = rng.normal(size=(n, d))
+    y = np.r_[np.ones(20, int), np.zeros(20, int)]
+    X[:20] += 2.0
+    ids = [f"P{i:05d}" for i in range(n)]
+    seqs = ["".join(rng.choice(list("ACDEFGHIKLMNPQRSTVWY"), 60)) for _ in range(n)]
+
+    pos = y == 1
+    H = X[pos] / np.linalg.norm(X[pos], axis=1, keepdims=True)
+    joblib.dump({"esm_clf": M.train_embedding_model(X, y),
+                 "bio_clf": M.train_feature_model(M.featurize(seqs), y),
+                 "feature_names": M.FEATURE_NAMES, "homolog_X": H.astype(np.float32),
+                 "homolog_ids": [ids[i] for i in np.flatnonzero(pos)],
+                 "model_name": "stub"}, M.MODELS_PATH)
+    pd.DataFrame({"sequence_id": ids[:20], "protein_name": [""] * 20,
+                  "family": ["LEA"] * 10 + ["dehydrin"] * 10}).to_csv(
+        tmp_path / "families.csv", index=False)
+
+    query = X[0] + rng.normal(scale=0.05, size=d)
+    monkeypatch.setitem(sys.modules, "tardiscreen.embed",
+                        types.SimpleNamespace(
+                            embed_sequences=lambda s, model_name=None: np.array([query])))
+
+    pred = M.predict(seqs[0])
+    cosines = [c for _, c, _ in pred.neighbours]
+    assert len(pred.neighbours) == M.N_NEIGHBOURS
+    assert cosines == sorted(cosines, reverse=True)
+    assert all(-1.0001 <= c <= 1.0001 for c in cosines)
+    assert pred.nearest_homolog == pred.neighbours[0][0] == "P00000"
+    assert all(family in {"LEA", "dehydrin"} for _, _, family in pred.neighbours)
+
+
+def test_neighbours_survive_a_missing_family_cache(tmp_path, monkeypatch):
+    """No families.csv must mean blank labels, never a 500 on every score request."""
+    from tardiscreen import model as M
+
+    monkeypatch.setattr(M, "DATA_DIR", tmp_path)
+    M._family_labels.cache_clear()
+    assert M.family_map() == {}
+
+    (tmp_path / "families.csv").write_text("not,a,valid\nfamilies,file,here\n")
+    M._family_labels.cache_clear()
+    assert M.family_map() == {}

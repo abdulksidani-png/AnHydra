@@ -106,6 +106,8 @@ class ScoreResponse(BaseModel):
     score: float
     label: str
     nearest_homolog: str | None
+    # (accession, cosine, family). Cosine is ESM-2 embedding similarity, never sequence identity.
+    neighbours: list[tuple[str, float, str]]
     top_features: list[tuple[str, float]]
     features: dict
     explanation: str
@@ -156,6 +158,7 @@ def score(req: ScoreRequest, user=Depends(authenticated_user)) -> ScoreResponse:
         score=round(pred.score, 3),
         label=pred.label,
         nearest_homolog=pred.nearest_homolog,
+        neighbours=pred.neighbours,
         top_features=[(name, round(value, 4)) for name, value in pred.top_features],
         features=compute_features(seq).as_dict(),
         explanation=explain(pred.score, pred.label, pred.nearest_homolog, pred.top_features),

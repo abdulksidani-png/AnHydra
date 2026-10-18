@@ -9,7 +9,7 @@ Train the production models (fit on all data) and save them for the app:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field, field
 from functools import lru_cache
 from pathlib import Path
 
@@ -21,6 +21,7 @@ from .artifacts import atomic_destination, load_embeddings
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 MODELS_PATH = DATA_DIR / "models.joblib"
 POSITIVE = "protective"   # the production task: protective vs. everything else
+N_NEIGHBOURS = 8          # enough for a neighbour map without flooding it
 
 
 @dataclass
@@ -29,6 +30,10 @@ class Prediction:
     label: str                   # argmax family call
     top_features: list[tuple[str, float]]   # (feature_name, contribution), for the "why"
     nearest_homolog: str | None = None       # id of nearest known protective sequence
+    # Nearest known protective sequences: (accession, cosine, family). Cosine is similarity
+    # in ESM-2 representation space, NOT sequence identity — never present it as an
+    # alignment. `family` is "" when data/families.csv is not present to label it.
+    neighbours: list[tuple[str, float, str]] = field(default_factory=list)
 
 
 def featurize(sequences: list[str]) -> np.ndarray:
@@ -100,6 +105,30 @@ def train(dataset_csv: Path | None = None):
 
 
 @lru_cache(maxsize=1)
+def _family_labels(path_str: str, mtime: float) -> dict[str, str]:
+    """accession -> family, from the cache family_holdout.py writes."""
+    import csv
+
+    with open(path_str, newline="") as handle:
+        return {row["sequence_id"]: row.get("family", "") for row in csv.DictReader(handle)}
+
+
+def family_map() -> dict[str, str]:
+    """Family labels if data/families.csv exists, otherwise nothing.
+
+    Read lazily rather than baked into models.joblib, so adding family labels never requires
+    retraining — the bundle already on the server stays valid as it is.
+    """
+    path = DATA_DIR / "families.csv"
+    if not path.exists():
+        return {}
+    try:
+        return _family_labels(str(path), path.stat().st_mtime)
+    except (OSError, KeyError, UnicodeDecodeError):
+        return {}          # a malformed cache must never take scoring down
+
+
+@lru_cache(maxsize=1)
 def _load_bundle(path_str: str, mtime: int) -> dict:
     """Read models.joblib, cached. `mtime` is part of the key so retraining invalidates the cache."""
     import joblib
@@ -140,18 +169,27 @@ def predict(sequence: str) -> Prediction:
     top = sorted(zip(bundle["feature_names"], contrib), key=lambda t: abs(t[1]), reverse=True)[:3]
     top_features = [(name, float(c)) for name, c in top]
 
-    # Nearest known protective homolog by cosine similarity.
-    nearest = None
+    # Nearest known protective sequences by cosine similarity in embedding space.
+    nearest, neighbours = None, []
     if len(bundle["homolog_ids"]):
         q = vec / (np.linalg.norm(vec) + 1e-9)
         sims = bundle["homolog_X"] @ q
-        nearest = bundle["homolog_ids"][int(np.argmax(sims))]
+        # argpartition picks the top N without sorting all ~1000 similarities.
+        k = min(N_NEIGHBOURS, len(sims))
+        top_idx = np.argpartition(-sims, k - 1)[:k]
+        top_idx = top_idx[np.argsort(-sims[top_idx])]
+        families = family_map()
+        neighbours = [(bundle["homolog_ids"][int(i)], round(float(sims[int(i)]), 4),
+                       families.get(bundle["homolog_ids"][int(i)], ""))
+                      for i in top_idx]
+        nearest = neighbours[0][0]
 
     return Prediction(score=score, label=POSITIVE if score >= 0.5 else "other_idp",
-                     top_features=top_features, nearest_homolog=nearest)
+                     top_features=top_features, nearest_homolog=nearest,
+                     neighbours=neighbours)
 
 
-__all__ = ["Prediction", "featurize", "train_embedding_model", "train_feature_model", "train",
+__all__ = ["Prediction", "family_map", "featurize", "train_embedding_model", "train_feature_model", "train",
            "predict", "load_bundle", "FEATURE_NAMES"]
 
 
