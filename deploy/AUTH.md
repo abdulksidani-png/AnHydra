@@ -11,7 +11,9 @@ password hash, access token, or refresh token is stored. No account linking exis
 Set `APP_ENV=production`, `AUTH0_ISSUER` (exact HTTPS issuer with trailing slash),
 `AUTH0_AUDIENCE` (registered API identifier, never the SPA client ID),
 `AUTH0_CLAIM_NAMESPACE` (HTTPS namespace with trailing slash), and `DATABASE_URL`.
-Production requires PostgreSQL `sslmode=verify-full` with a trusted CA. Invalid or
+Production requires PostgreSQL `sslmode=verify-full` with a trusted CA, except for a
+database on the same machine (`localhost`, `127.0.0.1` or `::1`, with no `host`/`hostaddr`/
+`service`/`port` query override), where traffic never leaves the server. Invalid or
 missing settings fail startup. `.env` is not loaded implicitly by Python; use
 `uvicorn app.main:app --env-file .env` locally. systemd uses `EnvironmentFile`.
 Keep production environment files owned by root and mode 0600. Do not commit secrets.
@@ -49,6 +51,22 @@ with generated signing keys do not establish provider integration. Frontend logi
 flow changes are owned by `docs/AUTH_FRONTEND_INSTRUCTIONS.md`.
 
 ## Database migrations and privileges
+
+### Quick path: PostgreSQL on the app server
+
+For the single Vultr box, `deploy/setup_postgres.sh` does everything below in one step:
+installs PostgreSQL (listening on localhost only), creates database `anhydra`, an owner role
+`anhydra_migrate` and a runtime role `anhydra_app` with only SELECT/INSERT (+UPDATE on
+`app_users`), runs the migrations, checks the runtime role cannot DELETE, and writes the
+runtime `DATABASE_URL` into the checkout's `.env` (backing up the old file; mode 0600).
+It is safe to re-run; it rotates role passwords and never drops data.
+
+```sh
+sudo bash deploy/setup_postgres.sh /root/tardiscreen
+systemctl restart tardiscreen
+```
+
+### General case (managed or remote PostgreSQL)
 
 Use PostgreSQL 14+ on a private network, encrypted disks and backups, and verified
 TLS. Run migrations once before starting the API using a separate migration role:
@@ -108,6 +126,13 @@ required keys give 503. Fresh known keys remain usable during an outage; expired
 keys do not. Rotation can take up to 30 seconds to become visible. Never retry an
 unverifiable token as anonymous. DB connection, pool, statement, and lock waits are
 bounded to 5 seconds. `/health` is liveness, not a claim of Auth0/DB readiness.
+
+If PostgreSQL is unreachable, `/me` returns 503, but `/score` still serves requests whose
+token passed full verification (signature, issuer, audience, expiry, token kind and
+admission), logging `Account store unavailable` instead. Trade-off: an account disabled in
+the database can still score until the database answers again. A disabled account is
+refused normally whenever the database is up. Unverified or ineligible requests are refused
+during an outage exactly as before.
 
 Disable an account immediately for subsequent requests with a parameterized admin
 operation equivalent to:

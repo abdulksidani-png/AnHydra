@@ -5,6 +5,17 @@ from urllib.parse import urlsplit
 
 from sqlalchemy.engine import make_url
 
+# A database on the same machine is reached over the loopback interface, which never leaves the
+# host, so TLS adds nothing there. Every other host still requires sslmode=verify-full.
+LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
+# libpq/psycopg let these query parameters override where the connection actually goes, so a URL
+# carrying any of them is never treated as loopback, whatever its visible host says.
+CONNECTION_TARGET_OVERRIDES = frozenset({"host", "hostaddr", "service", "port"})
+
+
+def is_loopback_database(url):
+    return url.host in LOOPBACK_HOSTS and not CONNECTION_TARGET_OVERRIDES & set(url.query)
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -41,10 +52,12 @@ class Settings:
                 url = make_url(database)
                 if url.drivername not in {"postgresql", "postgresql+psycopg"} or not url.host or not url.database:
                     raise ValueError()
-                if env == "production" and url.query.get("sslmode") != "verify-full":
+                if (env == "production" and url.query.get("sslmode") != "verify-full"
+                        and not is_loopback_database(url)):
                     raise ValueError()
             except Exception:
-                raise ValueError("DATABASE_URL must use PostgreSQL; production requires sslmode=verify-full") from None
+                raise ValueError("DATABASE_URL must use PostgreSQL; production requires "
+                                 "sslmode=verify-full unless the database is on localhost") from None
         origins = tuple(x.strip() for x in os.getenv("CORS_ORIGINS", "").split(",") if x.strip())
         for origin in origins:
             parsed = urlsplit(origin)

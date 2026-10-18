@@ -7,6 +7,13 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 
+class AccountStoreUnavailable(HTTPException):
+    """The database could not answer. Distinct from refusals (e.g. a disabled account) so that
+    /score can tell "we couldn't check" apart from "the answer was no"."""
+    def __init__(self):
+        super().__init__(503, "Account service is temporarily unavailable.")
+
+
 def database_engine(url):
     parsed = make_url(url).set(drivername="postgresql+psycopg")
     options = parsed.query.get("options", "") + " -c statement_timeout=5000 -c lock_timeout=5000 -c timezone=UTC"
@@ -44,7 +51,7 @@ class UserStore:
                     # READ COMMITTED sees the winning transaction after its unique-key wait.
                     row = connection.execute(LOOKUP, identity).mappings().first()
                     if row is None:
-                        raise HTTPException(503, "Account service is temporarily unavailable.")
+                        raise AccountStoreUnavailable()
                 if row["status"] != "active":
                     raise HTTPException(403, "This account is disabled.")
                 connection.execute(text("""UPDATE app_users SET last_seen_at=now()
@@ -52,4 +59,4 @@ class UserStore:
                                    {"id": row["id"]})
                 return {key: row[key] for key in ("id", "display_name", "email", "email_verified", "created_at")}
         except SQLAlchemyError:
-            raise HTTPException(503, "Account service is temporarily unavailable.") from None
+            raise AccountStoreUnavailable() from None

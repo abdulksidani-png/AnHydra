@@ -12,7 +12,7 @@ import jwt
 import pytest
 
 from app.auth import KeyCache, TokenVerifier
-from app.database import UserStore
+from app.database import AccountStoreUnavailable, UserStore
 from app.logging_safety import RedactCredentials
 from app.main import ConfiguredCORS, app, lifespan
 from app.settings import Settings
@@ -135,6 +135,52 @@ def test_disabled_before_inference(api, key):
     predict.assert_not_called()
 
 
+class ReachedInference(Exception):
+    """Raised by the patched model: proves a request got past admission."""
+
+
+def score_reaches_inference(api, headers):
+    with patch("app.main.MODELS_PATH") as models, patch("app.main.predict", side_effect=ReachedInference) as predict:
+        models.exists.return_value = True
+        response = api.post("/score", json={"sequence": "A" * 40}, headers=headers)
+    return response, predict.called
+
+
+def test_database_outage_still_scores_verified_tokens(api, key, caplog):
+    app.state.users.resolve.side_effect = AccountStoreUnavailable()
+    with caplog.at_level(logging.WARNING, logger="app.auth"):
+        response, reached = score_reaches_inference(api, {"Authorization": "Bearer " + token(key)})
+    assert reached, "a verified token must still reach the model during a database outage"
+    assert response.status_code == 503 and "Scoring is unavailable" in response.json()["detail"]
+    assert "Account store unavailable" in caplog.text and "Exact|Subject" not in caplog.text
+
+
+def test_database_outage_keeps_me_strict(api, key):
+    app.state.users.resolve.side_effect = AccountStoreUnavailable()
+    response = api.get("/me", headers={"Authorization": "Bearer " + token(key)})
+    assert response.status_code == 503
+
+
+@pytest.mark.parametrize("headers", [{}, {"Authorization": "Bearer a.b.c"}])
+def test_database_outage_never_admits_unverified_requests(api, key, headers):
+    app.state.users.resolve.side_effect = AccountStoreUnavailable()
+    response, reached = score_reaches_inference(api, headers)
+    assert response.status_code == 401 and not reached
+
+
+def test_database_outage_still_enforces_admission(api, key):
+    app.state.users.resolve.side_effect = AccountStoreUnavailable()
+    response, reached = score_reaches_inference(
+        api, {"Authorization": "Bearer " + token(key, **{NS + "admission": "microsoft"})})
+    assert response.status_code == 403 and not reached
+
+
+def test_disabled_account_is_not_an_outage(api, key):
+    app.state.users.resolve.side_effect = HTTPException(403, "This account is disabled.")
+    response, reached = score_reaches_inference(api, {"Authorization": "Bearer " + token(key)})
+    assert response.status_code == 403 and not reached
+
+
 def test_keys_rotation_throttle_and_outage(key):
     calls = []
     body = {"keys": [jwk(key)]}
@@ -209,7 +255,33 @@ def test_config_bypass_and_tls(monkeypatch):
     monkeypatch.setenv("APP_ENV", "development")
     assert Settings.from_env().anonymous
     set_config(monkeypatch)
-    monkeypatch.setenv("DATABASE_URL", "postgresql://localhost/test")
+    monkeypatch.setenv("DATABASE_URL", "postgresql://db.example.com/test")
+    with pytest.raises(ValueError):
+        Settings.from_env()
+
+
+@pytest.mark.parametrize("url", [
+    "postgresql+psycopg://app:pw@localhost/anhydra",
+    "postgresql+psycopg://app:pw@127.0.0.1:5432/anhydra",
+    "postgresql+psycopg://app:pw@[::1]/anhydra",
+])
+def test_production_allows_loopback_database_without_tls(monkeypatch, url):
+    set_config(monkeypatch)
+    monkeypatch.setenv("DATABASE_URL", url)
+    assert Settings.from_env().database_url == url
+
+
+@pytest.mark.parametrize("url", [
+    "postgresql+psycopg://app:pw@db.example.com/anhydra",                    # remote, no TLS
+    "postgresql+psycopg://app:pw@db.example.com/anhydra?sslmode=require",    # remote, unverified
+    "postgresql+psycopg://app:pw@localhost.evil.example/anhydra",            # lookalike host
+    "postgresql+psycopg://app:pw@localhost/anhydra?host=db.example.com",     # target overridden
+    "postgresql+psycopg://app:pw@localhost/anhydra?hostaddr=203.0.113.9",
+    "postgresql+psycopg://app:pw@localhost/anhydra?service=remote",
+])
+def test_production_still_requires_tls_off_host(monkeypatch, url):
+    set_config(monkeypatch)
+    monkeypatch.setenv("DATABASE_URL", url)
     with pytest.raises(ValueError):
         Settings.from_env()
 

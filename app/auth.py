@@ -1,5 +1,6 @@
 """Trusted-issuer JWT verification and the shared admission dependency."""
 from datetime import datetime, timezone
+import logging
 import re
 import threading
 import time
@@ -8,6 +9,10 @@ from uuid import UUID
 import httpx
 import jwt
 from fastapi import HTTPException, Request
+
+from app.database import AccountStoreUnavailable
+
+log = logging.getLogger(__name__)
 
 
 def unauthorized():
@@ -91,18 +96,48 @@ class TokenVerifier:
             raise unauthorized() from None
 
 
-def authenticated_user(request: Request):
+ANONYMOUS_USER = dict(id=UUID("00000000-0000-0000-0000-000000000001"), display_name=None,
+                      email=None, email_verified=False, created_at=datetime(2026, 1, 1, tzinfo=timezone.utc))
+
+
+def _verified_claims(request: Request):
+    """Return verified token claims, or None in explicit anonymous development mode."""
     settings = getattr(request.app.state, "settings", None)
     if settings is None:
         raise HTTPException(503, "Authentication is unavailable.")
     if settings.anonymous:
-        return dict(id=UUID("00000000-0000-0000-0000-000000000001"), display_name=None,
-                    email=None, email_verified=False, created_at=datetime(2026, 1, 1, tzinfo=timezone.utc))
+        return None
     headers = request.headers.getlist("authorization")
     if len(headers) != 1 or len(headers[0]) > 16384:
         raise unauthorized()
     match = re.fullmatch(r"Bearer ([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)", headers[0], re.IGNORECASE)
     if not match:
         raise unauthorized()
-    claims = request.app.state.verifier.verify(match.group(1))
+    return request.app.state.verifier.verify(match.group(1))
+
+
+def authenticated_user(request: Request):
+    """Strict admission: verified token AND an active account row. Used by /me."""
+    claims = _verified_claims(request)
+    if claims is None:
+        return dict(ANONYMOUS_USER)
     return request.app.state.users.resolve(claims["iss"], claims["sub"])
+
+
+def scoring_user(request: Request):
+    """Admission for /score. Identical to authenticated_user while the account store is up.
+
+    If PostgreSQL is unreachable, the token has still been fully verified (signature, issuer,
+    audience, expiry, token kind and admission claim), so scoring proceeds instead of failing
+    the whole product on a bookkeeping outage. The trade-off: an account disabled in the
+    database can still score until the database is back. A disabled account is refused
+    normally whenever the database answers.
+    """
+    claims = _verified_claims(request)
+    if claims is None:
+        return dict(ANONYMOUS_USER)
+    try:
+        return request.app.state.users.resolve(claims["iss"], claims["sub"])
+    except AccountStoreUnavailable:
+        log.warning("Account store unavailable; admitting a verified token for scoring only")
+        return dict(id=None, display_name=None, email=None, email_verified=False, created_at=None)
