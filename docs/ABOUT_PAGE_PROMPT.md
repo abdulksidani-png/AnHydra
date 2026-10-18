@@ -12,7 +12,7 @@ not colours to use.
 ## Theme
 
 Do **not** define a theme. Add no colours, fonts, font sizes, radii, shadows or CSS variables of
-your own. Use the design tokens and existing components (cards, buttons, chips, headings) that the
+your own. Use the design tokens and existing components (cards, buttons, chips, headings, icons) that the
 site already defines, so the page matches the rest of AnHydra and follows any theme change
 automatically. Any new CSS should be layout only (grid, gaps, wrapping), expressed in the site's
 existing spacing tokens.
@@ -47,13 +47,23 @@ A heading and four cards in a responsive grid: four across on desktop, two on ta
 phone. Each card has **only**:
 
 - the member's **name**, and
-- up to three link buttons: **GitHub**, **LinkedIn**, **Website**.
+- a row of up to three **icon widgets**: GitHub, LinkedIn, Website.
 
 No photos, roles, bios or descriptions.
 
-Render a button only when its URL exists. Links open in a new tab with
-`rel="noopener noreferrer"` and have an accessible name that includes the person, for example
-"Abdul Sidani on GitHub".
+Icon widgets:
+
+- Icons only, no visible text labels.
+- Use the GitHub mark, the LinkedIn "in" mark and a globe for the website. If the site already
+  has an icon set, take them from it; otherwise use inline SVGs.
+- Icons take their colour from the surrounding text (`currentColor`) so they follow the theme.
+  Hover and focus states come from the site's existing button styles.
+- Each widget is a link with an accessible name that includes the person, for example
+  `aria-label="Abdul Sidani on GitHub"`, plus a matching tooltip (`title`).
+- Render a widget only when its URL exists.
+- Links open in a new tab with `rel="noopener noreferrer"`.
+- Make each widget a comfortable tap target on phones (about 44 × 44 px), sized with the site's
+  existing spacing tokens.
 
 Keep the member data in one list so content edits never touch markup:
 
@@ -64,7 +74,7 @@ Keep the member data in one list so content edits never touch markup:
 | Gayathri Gunda | https://github.com/Gayathri-Gunda | _TBD_ | _TBD_ |
 | Vitor Ribeiro | _TBD_ | _TBD_ | _TBD_ |
 
-Leave _TBD_ entries empty in the data (those buttons simply won't render). Do not invent URLs.
+Leave _TBD_ entries empty in the data (those widgets simply won't render). Do not invent URLs.
 
 ## Requirements
 

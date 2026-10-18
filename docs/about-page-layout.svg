@@ -4,6 +4,7 @@
 .bar{fill:#c9cfd4}.barS{fill:#8c959d}.zone{fill:none;stroke:#c3c9ce;stroke-width:1;stroke-dasharray:5 4}
 .lbl{font-size:11px;fill:#5f6b75;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
 .t{font-size:10px;fill:#38424a;font-weight:600}.tb{font-size:14px;fill:#22292f;font-weight:600}.sm{font-size:10.5px;fill:#6b757e}
+.ic{fill:#38424a}.ict{font-size:14px;font-weight:700;fill:#fff;font-family:Arial,sans-serif}.ics{fill:none;stroke:#38424a;stroke-width:1.8}
 .cap{font-size:15px;fill:#22292f;font-weight:700}.num{fill:#22292f}.numt{font-size:11px;fill:#fff;font-weight:700}
 </style>
 <rect width="800" height="640" class="bg"/>
@@ -51,39 +52,39 @@
 <text x="24.0" y="420.0" class="numt" text-anchor="middle">3</text>
 <text x="50.0" y="420.0" class="lbl" text-anchor="start">3 · The team</text>
 <rect x="50.0" y="436.0" width="169.5" height="96.0" rx="6" class="box"/>
-<text x="134.8" y="468.0" class="tb" text-anchor="middle">Abdul Sidani</text>
-<rect x="62.0" y="488.0" width="44.5" height="28.0" rx="5" class="soft"/>
-<text x="84.2" y="506.0" class="t" text-anchor="middle">GitHub</text>
-<rect x="112.5" y="488.0" width="44.5" height="28.0" rx="5" class="soft"/>
-<text x="134.8" y="506.0" class="t" text-anchor="middle">LinkedIn</text>
-<rect x="163.0" y="488.0" width="44.5" height="28.0" rx="5" class="soft"/>
-<text x="185.2" y="506.0" class="t" text-anchor="middle">Website</text>
+<text x="134.8" y="466.0" class="tb" text-anchor="middle">Abdul Sidani</text>
+<rect x="71.8" y="484.0" width="34.0" height="34.0" rx="8" class="soft"/>
+<g transform="translate(78.8,491) scale(0.833)"><path class="ic" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></g>
+<rect x="117.8" y="484.0" width="34.0" height="34.0" rx="8" class="soft"/>
+<g transform="translate(124.8,491) scale(0.833)"><rect x="1" y="1" width="22" height="22" rx="3" class="ic"/><text x="12" y="18" text-anchor="middle" class="ict">in</text></g>
+<rect x="163.8" y="484.0" width="34.0" height="34.0" rx="8" class="soft"/>
+<g transform="translate(170.8,491) scale(0.833)"><g class="ics"><circle cx="12" cy="12" r="10"/><ellipse cx="12" cy="12" rx="4.2" ry="10"/><path d="M2 12h20M3.6 6.5h16.8M3.6 17.5h16.8"/></g></g>
 <rect x="233.5" y="436.0" width="169.5" height="96.0" rx="6" class="box"/>
-<text x="318.2" y="468.0" class="tb" text-anchor="middle">Benjamin Berrizbeitia</text>
-<rect x="245.5" y="488.0" width="44.5" height="28.0" rx="5" class="soft"/>
-<text x="267.8" y="506.0" class="t" text-anchor="middle">GitHub</text>
-<rect x="296.0" y="488.0" width="44.5" height="28.0" rx="5" class="soft"/>
-<text x="318.2" y="506.0" class="t" text-anchor="middle">LinkedIn</text>
-<rect x="346.5" y="488.0" width="44.5" height="28.0" rx="5" class="soft"/>
-<text x="368.8" y="506.0" class="t" text-anchor="middle">Website</text>
+<text x="318.2" y="466.0" class="tb" text-anchor="middle">Benjamin Berrizbeitia</text>
+<rect x="255.2" y="484.0" width="34.0" height="34.0" rx="8" class="soft"/>
+<g transform="translate(262.2,491) scale(0.833)"><path class="ic" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></g>
+<rect x="301.2" y="484.0" width="34.0" height="34.0" rx="8" class="soft"/>
+<g transform="translate(308.2,491) scale(0.833)"><rect x="1" y="1" width="22" height="22" rx="3" class="ic"/><text x="12" y="18" text-anchor="middle" class="ict">in</text></g>
+<rect x="347.2" y="484.0" width="34.0" height="34.0" rx="8" class="soft"/>
+<g transform="translate(354.2,491) scale(0.833)"><g class="ics"><circle cx="12" cy="12" r="10"/><ellipse cx="12" cy="12" rx="4.2" ry="10"/><path d="M2 12h20M3.6 6.5h16.8M3.6 17.5h16.8"/></g></g>
 <rect x="417.0" y="436.0" width="169.5" height="96.0" rx="6" class="box"/>
-<text x="501.8" y="468.0" class="tb" text-anchor="middle">Gayathri Gunda</text>
-<rect x="429.0" y="488.0" width="44.5" height="28.0" rx="5" class="soft"/>
-<text x="451.2" y="506.0" class="t" text-anchor="middle">GitHub</text>
-<rect x="479.5" y="488.0" width="44.5" height="28.0" rx="5" class="soft"/>
-<text x="501.8" y="506.0" class="t" text-anchor="middle">LinkedIn</text>
-<rect x="530.0" y="488.0" width="44.5" height="28.0" rx="5" class="soft"/>
-<text x="552.2" y="506.0" class="t" text-anchor="middle">Website</text>
+<text x="501.8" y="466.0" class="tb" text-anchor="middle">Gayathri Gunda</text>
+<rect x="438.8" y="484.0" width="34.0" height="34.0" rx="8" class="soft"/>
+<g transform="translate(445.8,491) scale(0.833)"><path class="ic" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></g>
+<rect x="484.8" y="484.0" width="34.0" height="34.0" rx="8" class="soft"/>
+<g transform="translate(491.8,491) scale(0.833)"><rect x="1" y="1" width="22" height="22" rx="3" class="ic"/><text x="12" y="18" text-anchor="middle" class="ict">in</text></g>
+<rect x="530.8" y="484.0" width="34.0" height="34.0" rx="8" class="soft"/>
+<g transform="translate(537.8,491) scale(0.833)"><g class="ics"><circle cx="12" cy="12" r="10"/><ellipse cx="12" cy="12" rx="4.2" ry="10"/><path d="M2 12h20M3.6 6.5h16.8M3.6 17.5h16.8"/></g></g>
 <rect x="600.5" y="436.0" width="169.5" height="96.0" rx="6" class="box"/>
-<text x="685.2" y="468.0" class="tb" text-anchor="middle">Vitor Ribeiro</text>
-<rect x="612.5" y="488.0" width="44.5" height="28.0" rx="5" class="soft"/>
-<text x="634.8" y="506.0" class="t" text-anchor="middle">GitHub</text>
-<rect x="663.0" y="488.0" width="44.5" height="28.0" rx="5" class="soft"/>
-<text x="685.2" y="506.0" class="t" text-anchor="middle">LinkedIn</text>
-<rect x="713.5" y="488.0" width="44.5" height="28.0" rx="5" class="soft"/>
-<text x="735.8" y="506.0" class="t" text-anchor="middle">Website</text>
+<text x="685.2" y="466.0" class="tb" text-anchor="middle">Vitor Ribeiro</text>
+<rect x="622.2" y="484.0" width="34.0" height="34.0" rx="8" class="soft"/>
+<g transform="translate(629.2,491) scale(0.833)"><path class="ic" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></g>
+<rect x="668.2" y="484.0" width="34.0" height="34.0" rx="8" class="soft"/>
+<g transform="translate(675.2,491) scale(0.833)"><rect x="1" y="1" width="22" height="22" rx="3" class="ic"/><text x="12" y="18" text-anchor="middle" class="ict">in</text></g>
+<rect x="714.2" y="484.0" width="34.0" height="34.0" rx="8" class="soft"/>
+<g transform="translate(721.2,491) scale(0.833)"><g class="ics"><circle cx="12" cy="12" r="10"/><ellipse cx="12" cy="12" rx="4.2" ry="10"/><path d="M2 12h20M3.6 6.5h16.8M3.6 17.5h16.8"/></g></g>
 <line x1="50" y1="550" x2="770" y2="550" stroke="#c3c9ce" stroke-dasharray="3 3"/>
-<text x="410.0" y="566.0" class="sm" text-anchor="middle">4 across on desktop · 2 on tablet · 1 on phone · a button shows only when its link exists</text>
+<text x="410.0" y="566.0" class="sm" text-anchor="middle">4 across on desktop · 2 on tablet · 1 on phone · icon widgets · each shows only when its link exists</text>
 <rect x="50.0" y="588.0" width="720.0" height="34.0" rx="6" class="zone"/>
 <text x="410.0" y="609.0" class="sm" text-anchor="middle">site footer already exists (not part of this page)</text>
 </svg>
