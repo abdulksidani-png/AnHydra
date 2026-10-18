@@ -11,7 +11,7 @@ export function Landing() {
       <Backdrop />
       <section className="wow" aria-labelledby="wow-title">
         <h1 id="wow-title" className="wow-title">
-          A tardigrade can lose nearly all of its water, stop, and come back
+          A tardigrade can lose nearly all of its water, stop, and come back…
         </h1>
         <p className="scroll-cue" aria-hidden="true">
           scroll
