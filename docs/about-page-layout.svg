@@ -1,0 +1,179 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1320" width="800" height="1320" font-family="ui-sans-serif, system-ui, sans-serif">
+<style>
+.bg{fill:#fff}.box{fill:#f6f7f8;stroke:#9aa3ab;stroke-width:1.2}.soft{fill:#fff;stroke:#c3c9ce;stroke-width:1;stroke-dasharray:4 3}
+.ph{fill:#e4e7ea;stroke:#9aa3ab;stroke-width:1.2}.bar{fill:#c9cfd4}.barS{fill:#8c959d}.btn{fill:#5f6b75}
+.lbl{font-size:11px;fill:#5f6b75;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.t{font-size:12px;fill:#38424a}.tb{font-size:13px;fill:#22292f;font-weight:600}.sm{font-size:10.5px;fill:#6b757e}
+.cap{font-size:15px;fill:#22292f;font-weight:700}.num{fill:#22292f}.numt{font-size:11px;fill:#fff;font-weight:700}
+.q{font-size:14px;fill:#22292f;font-style:italic}.btnt{font-size:11px;fill:#fff;font-weight:600}
+</style>
+<rect width="800" height="1320" class="bg"/>
+<text x="50.0" y="30.0" class="cap" text-anchor="start">About page · layout wireframe</text>
+<text x="770.0" y="30.0" class="sm" text-anchor="end">structure only · no theme · not to scale</text>
+<circle cx="24" cy="80" r="11" class="num"/>
+<text x="24.0" y="84.0" class="numt" text-anchor="middle">0</text>
+<rect x="50.0" y="55.0" width="720.0" height="50.0" rx="6" class="box"/>
+<rect x="62.0" y="65.0" width="44.0" height="30.0" rx="4" class="ph"/>
+<text x="84.0" y="84.0" class="sm" text-anchor="middle">logo</text>
+<rect x="118.0" y="72.0" width="120.0" height="10" rx="5.0" class="barS"/>
+<rect x="118.0" y="88.0" width="180.0" height="6" rx="3.0" class="bar"/>
+<text x="756.0" y="85.0" class="t" text-anchor="end">About us</text>
+<text x="646.0" y="85.0" class="t" text-anchor="end">Screen a sequence</text>
+<text x="410.0" y="124.0" class="sm" text-anchor="middle">Site header + nav (shared with the rest of the site)</text>
+<circle cx="24" cy="156" r="11" class="num"/>
+<text x="24.0" y="160.0" class="numt" text-anchor="middle">1</text>
+<text x="50.0" y="160.0" class="lbl" text-anchor="start">1 · About us</text>
+<rect x="50.0" y="176.0" width="420.0" height="14" rx="7.0" class="barS"/>
+<rect x="50.0" y="196.0" width="330.0" height="14" rx="7.0" class="barS"/>
+<rect x="50.0" y="226.0" width="700.0" height="8" rx="4.0" class="bar"/>
+<rect x="50.0" y="242.0" width="680.0" height="8" rx="4.0" class="bar"/>
+<rect x="50.0" y="258.0" width="690.0" height="8" rx="4.0" class="bar"/>
+<rect x="50.0" y="274.0" width="520.0" height="8" rx="4.0" class="bar"/>
+<rect x="50.0" y="296.0" width="700.0" height="8" rx="4.0" class="bar"/>
+<rect x="50.0" y="312.0" width="640.0" height="8" rx="4.0" class="bar"/>
+<rect x="50.0" y="328.0" width="410.0" height="8" rx="4.0" class="bar"/>
+<text x="770.0" y="160.0" class="sm" text-anchor="end">lead line + 2–3 short paragraphs</text>
+<circle cx="24" cy="366" r="11" class="num"/>
+<text x="24.0" y="370.0" class="numt" text-anchor="middle">2</text>
+<text x="50.0" y="370.0" class="lbl" text-anchor="start">2 · Mission statement</text>
+<rect x="50.0" y="384.0" width="720.0" height="74.0" rx="6" class="box"/>
+<rect x="50" y="384" width="4" height="74" class="btn"/>
+<text x="72.0" y="416.0" class="q" text-anchor="start">“Find the proteins that let life survive without water,</text>
+<text x="72.0" y="436.0" class="q" text-anchor="start">and be honest about what a model can and cannot tell you.”</text>
+<rect x="50.0" y="472.0" width="169.5" height="82.0" rx="6" class="box"/>
+<text x="62.0" y="492.0" class="sm" text-anchor="start">01</text>
+<text x="62.0" y="512.0" class="tb" text-anchor="start">Triage, not prophecy</text>
+<rect x="62.0" y="524.0" width="139.5" height="6" rx="3.0" class="bar"/>
+<rect x="62.0" y="536.0" width="109.5" height="6" rx="3.0" class="bar"/>
+<rect x="233.5" y="472.0" width="169.5" height="82.0" rx="6" class="box"/>
+<text x="245.5" y="492.0" class="sm" text-anchor="start">02</text>
+<text x="245.5" y="512.0" class="tb" text-anchor="start">No made-up numbers</text>
+<rect x="245.5" y="524.0" width="139.5" height="6" rx="3.0" class="bar"/>
+<rect x="245.5" y="536.0" width="109.5" height="6" rx="3.0" class="bar"/>
+<rect x="417.0" y="472.0" width="169.5" height="82.0" rx="6" class="box"/>
+<text x="429.0" y="492.0" class="sm" text-anchor="start">03</text>
+<text x="429.0" y="512.0" class="tb" text-anchor="start">Doubt good results</text>
+<rect x="429.0" y="524.0" width="139.5" height="6" rx="3.0" class="bar"/>
+<rect x="429.0" y="536.0" width="109.5" height="6" rx="3.0" class="bar"/>
+<rect x="600.5" y="472.0" width="169.5" height="82.0" rx="6" class="box"/>
+<text x="612.5" y="492.0" class="sm" text-anchor="start">04</text>
+<text x="612.5" y="512.0" class="tb" text-anchor="start">Explain every score</text>
+<rect x="612.5" y="524.0" width="139.5" height="6" rx="3.0" class="bar"/>
+<rect x="612.5" y="536.0" width="109.5" height="6" rx="3.0" class="bar"/>
+<circle cx="24" cy="586" r="11" class="num"/>
+<text x="24.0" y="590.0" class="numt" text-anchor="middle">3</text>
+<text x="50.0" y="590.0" class="lbl" text-anchor="start">3 · Made at SwampHacks XII</text>
+<rect x="50.0" y="606.0" width="134.4" height="58.0" rx="6" class="box"/>
+<text x="62.0" y="626.0" class="sm" text-anchor="start">Event</text>
+<text x="62.0" y="648.0" class="tb" text-anchor="start">SwampHacks XII</text>
+<rect x="196.4" y="606.0" width="134.4" height="58.0" rx="6" class="box"/>
+<text x="208.4" y="626.0" class="sm" text-anchor="start">Host</text>
+<text x="208.4" y="648.0" class="tb" text-anchor="start">Univ. of Florida</text>
+<rect x="342.8" y="606.0" width="134.4" height="58.0" rx="6" class="box"/>
+<text x="354.8" y="626.0" class="sm" text-anchor="start">Dates</text>
+<text x="354.8" y="648.0" class="tb" text-anchor="start">Oct 16–18, 2026</text>
+<rect x="489.2" y="606.0" width="134.4" height="58.0" rx="6" class="box"/>
+<text x="501.2" y="626.0" class="sm" text-anchor="start">Build</text>
+<text x="501.2" y="648.0" class="tb" text-anchor="start">~36 hours</text>
+<rect x="635.6" y="606.0" width="134.4" height="58.0" rx="6" class="box"/>
+<text x="647.6" y="626.0" class="sm" text-anchor="start">Team</text>
+<text x="647.6" y="648.0" class="tb" text-anchor="start">4 developers</text>
+<rect x="50.0" y="680.0" width="640.0" height="8" rx="4.0" class="bar"/>
+<rect x="50.0" y="696.0" width="480.0" height="8" rx="4.0" class="bar"/>
+<text x="770.0" y="590.0" class="sm" text-anchor="end">fact tiles + how we worked</text>
+<circle cx="24" cy="746" r="11" class="num"/>
+<text x="24.0" y="750.0" class="numt" text-anchor="middle">4</text>
+<text x="50.0" y="750.0" class="lbl" text-anchor="start">4 · The team — four member widgets</text>
+<rect x="50.0" y="766.0" width="169.5" height="380.0" rx="6" class="box"/>
+<rect x="50.0" y="766.0" width="169.5" height="211.9" rx="6" class="ph"/>
+<text x="134.8" y="875.9" class="cap" text-anchor="middle">AS</text>
+<text x="134.8" y="893.9" class="sm" text-anchor="middle">photo 4:5</text>
+<text x="62.0" y="997.9" class="tb" text-anchor="start">Abdul Sidani</text>
+<text x="62.0" y="1013.9" class="sm" text-anchor="start">Data · model · eval</text>
+<circle cx="65.0" cy="1030.875" r="2" class="barS"/>
+<rect x="72.0" y="1027.9" width="127.5" height="6" rx="3.0" class="bar"/>
+<circle cx="65.0" cy="1043.875" r="2" class="barS"/>
+<rect x="72.0" y="1040.9" width="111.5" height="6" rx="3.0" class="bar"/>
+<circle cx="65.0" cy="1056.875" r="2" class="barS"/>
+<rect x="72.0" y="1053.9" width="119.5" height="6" rx="3.0" class="bar"/>
+<rect x="60.0" y="1071.9" width="149.5" height="24.0" rx="4" class="soft"/>
+<text x="134.8" y="1087.9" class="sm" text-anchor="middle">bio · fun fact (optional)</text>
+<text x="62.0" y="1128.0" class="t" text-anchor="start">GH</text>
+<text x="96.0" y="1128.0" class="t" text-anchor="start">in</text>
+<text x="130.0" y="1128.0" class="t" text-anchor="start">web</text>
+<rect x="233.5" y="766.0" width="169.5" height="380.0" rx="6" class="box"/>
+<rect x="233.5" y="766.0" width="169.5" height="211.9" rx="6" class="ph"/>
+<text x="318.2" y="875.9" class="cap" text-anchor="middle">BB</text>
+<text x="318.2" y="893.9" class="sm" text-anchor="middle">photo 4:5</text>
+<text x="245.5" y="997.9" class="tb" text-anchor="start">Benjamin B.</text>
+<text x="245.5" y="1013.9" class="sm" text-anchor="start">Backend · auth · release</text>
+<circle cx="248.5" cy="1030.875" r="2" class="barS"/>
+<rect x="255.5" y="1027.9" width="127.5" height="6" rx="3.0" class="bar"/>
+<circle cx="248.5" cy="1043.875" r="2" class="barS"/>
+<rect x="255.5" y="1040.9" width="111.5" height="6" rx="3.0" class="bar"/>
+<circle cx="248.5" cy="1056.875" r="2" class="barS"/>
+<rect x="255.5" y="1053.9" width="119.5" height="6" rx="3.0" class="bar"/>
+<rect x="243.5" y="1071.9" width="149.5" height="24.0" rx="4" class="soft"/>
+<text x="318.2" y="1087.9" class="sm" text-anchor="middle">bio · fun fact (optional)</text>
+<text x="245.5" y="1128.0" class="t" text-anchor="start">GH</text>
+<text x="279.5" y="1128.0" class="t" text-anchor="start">in</text>
+<text x="313.5" y="1128.0" class="t" text-anchor="start">web</text>
+<rect x="417.0" y="766.0" width="169.5" height="380.0" rx="6" class="box"/>
+<rect x="417.0" y="766.0" width="169.5" height="211.9" rx="6" class="ph"/>
+<text x="501.8" y="875.9" class="cap" text-anchor="middle">GG</text>
+<text x="501.8" y="893.9" class="sm" text-anchor="middle">photo 4:5</text>
+<text x="429.0" y="997.9" class="tb" text-anchor="start">Gayathri Gunda</text>
+<text x="429.0" y="1013.9" class="sm" text-anchor="start">Frontend design</text>
+<circle cx="432.0" cy="1030.875" r="2" class="barS"/>
+<rect x="439.0" y="1027.9" width="127.5" height="6" rx="3.0" class="bar"/>
+<circle cx="432.0" cy="1043.875" r="2" class="barS"/>
+<rect x="439.0" y="1040.9" width="111.5" height="6" rx="3.0" class="bar"/>
+<circle cx="432.0" cy="1056.875" r="2" class="barS"/>
+<rect x="439.0" y="1053.9" width="119.5" height="6" rx="3.0" class="bar"/>
+<rect x="427.0" y="1071.9" width="149.5" height="24.0" rx="4" class="soft"/>
+<text x="501.8" y="1087.9" class="sm" text-anchor="middle">bio · fun fact (optional)</text>
+<text x="429.0" y="1128.0" class="t" text-anchor="start">GH</text>
+<text x="463.0" y="1128.0" class="t" text-anchor="start">in</text>
+<text x="497.0" y="1128.0" class="t" text-anchor="start">web</text>
+<rect x="600.5" y="766.0" width="169.5" height="380.0" rx="6" class="box"/>
+<rect x="600.5" y="766.0" width="169.5" height="211.9" rx="6" class="ph"/>
+<text x="685.2" y="875.9" class="cap" text-anchor="middle">VR</text>
+<text x="685.2" y="893.9" class="sm" text-anchor="middle">photo 4:5</text>
+<text x="612.5" y="997.9" class="tb" text-anchor="start">Vitor Ribeiro</text>
+<text x="612.5" y="1013.9" class="sm" text-anchor="start">Domain · sign-in · deploy</text>
+<circle cx="615.5" cy="1030.875" r="2" class="barS"/>
+<rect x="622.5" y="1027.9" width="127.5" height="6" rx="3.0" class="bar"/>
+<circle cx="615.5" cy="1043.875" r="2" class="barS"/>
+<rect x="622.5" y="1040.9" width="111.5" height="6" rx="3.0" class="bar"/>
+<circle cx="615.5" cy="1056.875" r="2" class="barS"/>
+<rect x="622.5" y="1053.9" width="119.5" height="6" rx="3.0" class="bar"/>
+<rect x="610.5" y="1071.9" width="149.5" height="24.0" rx="4" class="soft"/>
+<text x="685.2" y="1087.9" class="sm" text-anchor="middle">bio · fun fact (optional)</text>
+<text x="612.5" y="1128.0" class="t" text-anchor="start">GH</text>
+<text x="646.5" y="1128.0" class="t" text-anchor="start">in</text>
+<text x="680.5" y="1128.0" class="t" text-anchor="start">web</text>
+<line x1="50" y1="1162" x2="770" y2="1162" stroke="#c3c9ce" stroke-dasharray="3 3"/>
+<text x="410.0" y="1178.0" class="sm" text-anchor="middle">4 across on desktop · 2 on tablet · 1 on phone</text>
+<circle cx="24" cy="1216" r="11" class="num"/>
+<text x="24.0" y="1220.0" class="numt" text-anchor="middle">5</text>
+<text x="50.0" y="1220.0" class="lbl" text-anchor="start">5 · Built with</text>
+<rect x="50" y="1232" width="59" height="22" rx="11" class="soft"/>
+<text x="79.5" y="1247.0" class="sm" text-anchor="middle">ESM-2</text>
+<rect x="117" y="1232" width="73" height="22" rx="11" class="soft"/>
+<text x="153.5" y="1247.0" class="sm" text-anchor="middle">PyTorch</text>
+<rect x="198" y="1232" width="108" height="22" rx="11" class="soft"/>
+<text x="252.0" y="1247.0" class="sm" text-anchor="middle">scikit-learn</text>
+<rect x="314" y="1232" width="73" height="22" rx="11" class="soft"/>
+<text x="350.5" y="1247.0" class="sm" text-anchor="middle">FastAPI</text>
+<rect x="395" y="1232" width="59" height="22" rx="11" class="soft"/>
+<text x="424.5" y="1247.0" class="sm" text-anchor="middle">React</text>
+<rect x="462" y="1232" width="66" height="22" rx="11" class="soft"/>
+<text x="495.0" y="1247.0" class="sm" text-anchor="middle">Gemini</text>
+<rect x="536" y="1232" width="31" height="22" rx="11" class="soft"/>
+<text x="551.5" y="1247.0" class="sm" text-anchor="middle">…</text>
+<rect x="620" y="1230" width="150" height="26" rx="5" class="btn"/>
+<text x="695.0" y="1247.0" class="btnt" text-anchor="middle">Screen a sequence →</text>
+<line x1="50" y1="1270" x2="770" y2="1270" stroke="#9aa3ab"/>
+<text x="50.0" y="1292.0" class="sm" text-anchor="start">Built at SwampHacks XII · University of Florida · October 2026</text>
+<text x="770.0" y="1292.0" class="sm" text-anchor="end">source &amp; methodology</text>
+</svg>
