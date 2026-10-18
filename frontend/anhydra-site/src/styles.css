@@ -1,0 +1,153 @@
+@import "./theme.css";
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  /* Every corner scales from the theme's --radius, so a 0 theme is square throughout. At the default 0.625rem
+     the steps keep today's sizes (xs 2px, xl 14px, 2xl/3xl/4xl Tailwind's 16/24/32px); xs never tops sm. */
+  --radius-xs: min(calc(var(--radius) * 0.2), max(0px, calc(var(--radius) - 4px)));
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.6);
+  --radius-3xl: calc(var(--radius) * 2.4);
+  --radius-4xl: calc(var(--radius) * 3.2);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-on-image: var(--on-image);
+  --color-on-image-muted: var(--on-image-muted);
+
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+
+  --radius-btn: var(--btn-radius);
+  --radius-badge: var(--badge-radius);
+  --radius-card: var(--card-radius);
+  --radius-input: var(--input-radius);
+
+  --spacing-btn-h: var(--btn-h);
+  --spacing-btn-h-xs: calc(var(--btn-h) - 0.75rem);
+  --spacing-btn-h-sm: calc(var(--btn-h) - 0.25rem);
+  --spacing-btn-h-lg: calc(var(--btn-h) + 0.25rem);
+  --spacing-btn-px: var(--btn-px);
+  --spacing-btn-px-xs: calc(var(--btn-px) - 0.5rem);
+  --spacing-btn-px-sm: calc(var(--btn-px) - 0.25rem);
+  --spacing-btn-px-lg: calc(var(--btn-px) + 0.5rem);
+  --spacing-badge-px: var(--badge-px);
+  --spacing-input-h: var(--input-h);
+
+  --text-btn: var(--btn-fs);
+  --text-btn--line-height: var(--btn-leading);
+  --text-btn-xs: calc(var(--btn-fs) - 0.125rem);
+  --text-btn-xs--line-height: var(--btn-leading);
+  --text-badge: var(--badge-fs);
+  --text-badge--line-height: var(--badge-leading);
+
+  --font-weight-btn: var(--btn-weight);
+  --font-weight-badge: var(--badge-weight);
+  --tracking-btn: var(--btn-tracking);
+  --tracking-badge: var(--badge-tracking);
+
+  --shadow-card: var(--card-shadow);
+  --shadow-input: var(--input-shadow);
+
+  --color-button: var(--btn-bg);
+  --color-button-foreground: var(--btn-fg);
+  --color-btn-hover: var(--btn-hover-bg);
+  --color-btn-hover-secondary: var(--btn-hover-bg-secondary);
+}
+
+@layer base {
+  /* Read role vars, not --color-*: those resolve once on :root, so a nested .dark would stay light. */
+  .dark {
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+
+  * {
+    border-color: var(--border);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    /* Animations run out immediately rather than being removed, so anything that waits for
+       them to finish — overlay unmounting, for one — still settles. Transitions are dropped
+       outright: a near-zero duration still reports as a live transition and changes which
+       code path Base UI's collapsible and positioning take. */
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-delay: -1ms !important;
+      animation-iteration-count: 1 !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+    /* A frozen spinner or skeleton says the opposite of what it is for. */
+    .animate-spin {
+      animation-duration: 1s !important;
+    }
+    .animate-pulse {
+      animation-duration: 2s !important;
+    }
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 {
+    font-family: var(--display-h1-font-family, var(--font-display));
+    font-size: var(--display-h1-size);
+    font-weight: var(--display-h1-weight);
+    letter-spacing: var(--display-h1-tracking);
+    line-height: var(--display-h1-leading);
+  }
+  h2 {
+    font-family: var(--display-h2-font-family, var(--font-display));
+    font-size: var(--display-h2-size);
+    font-weight: var(--display-h2-weight);
+    letter-spacing: var(--display-h2-tracking);
+    line-height: var(--display-h2-leading);
+  }
+  h3 {
+    font-family: var(--display-h3-font-family, var(--font-display));
+    font-size: var(--display-h3-size);
+    font-weight: var(--display-h3-weight);
+    letter-spacing: var(--display-h3-tracking);
+    line-height: var(--display-h3-leading);
+  }
+  h4 {
+    font-family: var(--display-h4-font-family, var(--font-display));
+    font-size: var(--display-h4-size);
+    font-weight: var(--display-h4-weight);
+    letter-spacing: var(--display-h4-tracking);
+    line-height: var(--display-h4-leading);
+  }
+}

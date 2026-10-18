@@ -184,7 +184,8 @@ anhydra/  (repo: tardiscreen)
 │   ├── DEMO.md             the presentation + live-demo script
 │   ├── EXPLAINER.md        the whole project in plain English
 │   └── results/            the CSVs and figures behind every number above
-├── frontend/               React UI (separate from the served page; see its README)
+├── frontend/               React UIs (separate from the served page; see their READMEs)
+│   └── anhydra-site/       the Duda-built site: landing, screener, about
 ├── deploy/                 systemd unit + Caddy config for the Vultr host
 └── scripts/check_site.sh   is the live site demo-ready?
 ```

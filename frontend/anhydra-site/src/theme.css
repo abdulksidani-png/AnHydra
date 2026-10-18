@@ -1,0 +1,189 @@
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
+
+:root {
+  /* Palette */
+  --color-1: #0d0d0e;
+  --color-2: #1a1b1c;
+  --color-3: #efefef;
+  --color-4: #44d3c4;
+  --color-5: #242526;
+  --color-6: #f08a7a;
+  --color-7: #44d3c4;
+  --color-8: #e9a23b;
+  --color-9: #041a18;
+  --color-10: #efefef;
+  --color-11: #b4b4b4;
+  --color-12: #0d0d0e;
+  --color-13: #343536;
+  --color-14: #4c4d4e;
+  --color-15: #44d3c4;
+  --color-16: #efefef;
+  --color-17: #b4b4b4;
+
+  --font-1: "Instrument Serif", Georgia, serif;
+  --font-2: "Instrument Sans", system-ui, sans-serif;
+
+  --radius: 0.5rem;
+
+  --background: var(--color-1);
+  --foreground: var(--color-3);
+  --surface: var(--color-2);
+  --surface-elevated: var(--color-5);
+  --card: var(--color-2);
+  --card-foreground: var(--color-3);
+  --popover: var(--color-2);
+  --popover-foreground: var(--color-3);
+  --primary: var(--color-4);
+  --primary-foreground: var(--color-9);
+  --secondary: var(--color-5);
+  --secondary-foreground: var(--color-10);
+  --muted: var(--color-5);
+  --muted-foreground: var(--color-11);
+  --accent: var(--color-5);
+  --accent-foreground: var(--color-10);
+  --destructive: var(--color-6);
+  --destructive-foreground: var(--color-12);
+  --success: var(--color-7);
+  --success-foreground: var(--color-9);
+  --warning: var(--color-8);
+  --warning-foreground: var(--color-12);
+  --border: var(--color-13);
+  --input: var(--color-14);
+  --ring: var(--color-15);
+
+  --on-image: var(--color-16);
+  --on-image-muted: var(--color-17);
+
+  --font-display: var(--font-1);
+  --font-sans: var(--font-2);
+
+  --display-h1-font-family: var(--font-display);
+  --display-h1-size: clamp(2rem, 5vw, 3.5rem);
+  --display-h1-weight: 400;
+  --display-h1-tracking: -0.02em;
+  --display-h1-leading: 1.1;
+  --display-h2-font-family: var(--font-display);
+  --display-h2-size: clamp(1.5rem, 3vw, 2.25rem);
+  --display-h2-weight: 400;
+  --display-h2-tracking: -0.01em;
+  --display-h2-leading: 1.2;
+  --display-h3-font-family: var(--font-display);
+  --display-h3-size: 1.25rem;
+  --display-h3-weight: 400;
+  --display-h3-tracking: -0.005em;
+  --display-h3-leading: 1.3;
+  --display-h4-font-family: var(--font-display);
+  --display-h4-size: 1rem;
+  --display-h4-weight: 400;
+  --display-h4-tracking: 0;
+  --display-h4-leading: 1.4;
+
+  --btn-radius: calc(var(--radius) - 2px);
+  --btn-h: 2.75rem;
+  --btn-px: 1.25rem;
+  --btn-fs: 0.875rem;
+  --btn-leading: calc(1.25 / 0.875);
+  --btn-weight: 600;
+  --btn-tracking: 0;
+  --btn-bg: var(--primary);
+  --btn-fg: var(--primary-foreground);
+  --btn-hover-bg: color-mix(in oklab, var(--btn-bg) 90%, transparent);
+  --btn-hover-bg-secondary: color-mix(
+    in oklab,
+    var(--secondary) 80%,
+    transparent
+  );
+
+  --badge-radius: calc(var(--radius) * 0.6);
+  --badge-px: 0.5rem;
+  --badge-fs: 0.75rem;
+  --badge-leading: calc(1 / 0.75);
+  --badge-weight: 400;
+  --badge-tracking: 0;
+
+  --card-radius: calc(var(--radius) * 1.2);
+  --card-shadow: none;
+
+  --input-h: 2.75rem;
+  --input-radius: calc(var(--radius) - 2px);
+  --input-shadow: none;
+
+  --abyss: #0d0d0e;
+  --abyss-2: #070707;
+  --column: #1a1b1c;
+  --column-raised: #242526;
+  --foam: #efefef;
+  --silt: #b4b4b4;
+  --silt-deep: #9c9c9c;
+  --rule: #343536;
+  --rule-strong: #4c4d4e;
+  --rule-faint: #262728;
+  --glow: #44d3c4;
+  --glow-deep: #2aa698;
+  --amber: #e9a23b;
+  --res-acidic: #ef7d5a;
+  --res-basic: #6fb6ff;
+  --res-polar: #44d3c4;
+  --res-hydro: #7d93a8;
+  --res-flex: #e9c46a;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+.dark {
+  /* Palette */
+  --color-1: #0d0d0e;
+  --color-2: #1a1b1c;
+  --color-3: #efefef;
+  --color-4: #44d3c4;
+  --color-5: #242526;
+  --color-6: #f08a7a;
+  --color-7: #44d3c4;
+  --color-8: #e9a23b;
+  --color-9: #041a18;
+  --color-10: #efefef;
+  --color-11: #b4b4b4;
+  --color-12: #0d0d0e;
+  --color-13: #343536;
+  --color-14: #4c4d4e;
+  --color-15: #44d3c4;
+  --color-16: #efefef;
+  --color-17: #b4b4b4;
+
+  --background: var(--color-1);
+  --foreground: var(--color-3);
+  --surface: var(--color-2);
+  --surface-elevated: var(--color-5);
+  --card: var(--color-2);
+  --card-foreground: var(--color-3);
+  --popover: var(--color-2);
+  --popover-foreground: var(--color-3);
+  --primary: var(--color-4);
+  --primary-foreground: var(--color-9);
+  --secondary: var(--color-5);
+  --secondary-foreground: var(--color-10);
+  --muted: var(--color-5);
+  --muted-foreground: var(--color-11);
+  --accent: var(--color-5);
+  --accent-foreground: var(--color-10);
+  --destructive: var(--color-6);
+  --destructive-foreground: var(--color-12);
+  --success: var(--color-7);
+  --success-foreground: var(--color-9);
+  --warning: var(--color-8);
+  --warning-foreground: var(--color-12);
+  --border: var(--color-13);
+  --input: var(--color-14);
+  --ring: var(--color-15);
+
+  --on-image: var(--color-16);
+  --on-image-muted: var(--color-17);
+
+  --btn-bg: var(--primary);
+  --btn-fg: var(--primary-foreground);
+  --btn-hover-bg: color-mix(in oklab, var(--btn-bg) 90%, transparent);
+  --btn-hover-bg-secondary: color-mix(
+    in oklab,
+    var(--secondary) 80%,
+    transparent
+  );
+}
