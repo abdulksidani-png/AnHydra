@@ -53,7 +53,9 @@ that quota. On the server, from the checkout:
 3. Set `VITE_PUBLIC_ACCESS=true` with no Auth0 settings in the site's
    `.env.production.local`. Pick the example buttons from the training data, then build
    the site (Node 20 or newer):
-   `.venv/bin/python scripts/pick_examples.py > frontend/anhydra-site/public/examples.json`, then
+   `.venv/bin/python scripts/pick_examples.py > frontend/anhydra-site/public/examples.json`.
+   Optionally upscale the home page photo (a few minutes on the CPU; without it the photo comes
+   from Duda's image server): `.venv/bin/python scripts/upscale_backdrop.py`. Then
    `cd frontend/anhydra-site && npm ci && npm run build`.
    Copy it into place: `mkdir -p /var/www/anhydra-site && cp -r dist/. /var/www/anhydra-site/`.
 4. Back up `/etc/caddy/Caddyfile`, replace the AnHydra block with `deploy/Caddyfile.site`,
