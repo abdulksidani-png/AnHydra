@@ -1,6 +1,8 @@
 # Backend authentication operations
 
-The backend protects `GET /me` and `POST /score`. `/health` and `/ready` remain public.
+With `PUBLIC_ACCESS=false`, the backend protects `GET /me` and `POST /score`.
+The explicit public mode skips Auth0 and PostgreSQL; see [deployment modes](README.md).
+`/health` and `/ready` remain public.
 The score payload and successful response are unchanged. `/me` returns only `id`,
 `display_name`, `email`, `email_verified`, and UTC `created_at`. Profile fields start
 null/false; arbitrary profile claims and browser fields are ignored. No password,
@@ -37,7 +39,8 @@ subject prefixes, email suffix alone, browser input, or user-editable metadata.
 Fail closed when this evidence is absent. Auth0 must reserve these claims from other
 issuance paths. Tokens with `gty=client-credentials` are also rejected. No additional
 scopes are required. Missing/wrong token kind gives 401; missing/unknown admission
-gives 403. Email verification itself grants no access.
+gives 403. A browser-supplied email-verification flag grants no access; admission
+must come from the trusted Action's signed claim.
 
 Keep Google admission and institution-verified `.edu` admission. Microsoft has no
 blanket admission: an enterprise school identity may qualify through the same
@@ -52,7 +55,7 @@ No tenant credentials were supplied for this implementation. Before rollout,
 verify real Google, hosted email, Microsoft personal and school flows as applicable,
 including denial cases, audience, claim issuance, and `/me` then `/score`. Unit tests
 with generated signing keys do not establish provider integration. Frontend login
-flow changes are owned by `docs/AUTH_FRONTEND_INSTRUCTIONS.md`.
+integration details are in [frontend authentication](../frontend/anhydra-frontend/AUTH.md).
 
 ## Database migrations and privileges
 

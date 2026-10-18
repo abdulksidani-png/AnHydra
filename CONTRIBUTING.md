@@ -1,40 +1,32 @@
-# Contributing / Team playbook
+# Contributing
 
-Short, so everyone can read it in two minutes.
+Keep `main` deployable. Use a branch per task, make focused commits, and open a
+pull request for teammate review before merging.
 
-## Roles (assign Friday night)
+Coordinate changes with the relevant owner in [TEAM.md](TEAM.md), especially
+while frontend work is in progress. Preserve unrelated work and check branch
+ancestry before retiring a branch. A branch name or an old commit date does not
+establish that its work has been merged.
 
-- **Data** — UniProt / DisProt / MobiDB pulls, labeling, CD-HIT clustering. Owns `src/tardiscreen/data.py`.
-- **Model** — ESM-2 embeddings, classifier head, feature model, evals. Owns `embed.py`, `model.py`, `evaluate.py`.
-- **App** — FastAPI backend + the results UI + Vultr deploy + domain. Owns `app/`.
-- **Writeup** — README, DEV post, Devpost, honest-limitations section, citations, demo recording.
+Only the data owner regenerates datasets, embeddings, or trained models. Routine
+deployment and documentation changes do not require retraining.
 
-(2-person team: Data+Model is one person, App+Writeup the other. Swap as needed.)
+## Development
 
-## Ground rules from the hacker guide
+Follow the [README](README.md) for setup and the staged data pipeline. Copy
+`.env.example` to `.env` for local settings. Keep secrets, local environments,
+generated datasets, and model caches out of Git.
 
-- ⚠️ **Write every line of code *after* hacking officially begins** (treat Fri ~8:30 PM as the safe
-  start — starting early is the explicit disqualification clause). The project must be new.
-- Public data and a pretrained model (ESM-2) are allowed.
-- Keep a **public repo** — the AI track requires it and judges read the code.
+Run the checks relevant to your changes. The [CI workflow](.github/workflows/ci.yml)
+defines the backend suite and frontend test/build matrix. Each frontend's
+`package.json` and README define its commands; coordinate which app is being
+deployed with the frontend owner.
 
-## Workflow
+## Review and release
 
-- `main` stays deployable. Branch per task: `data/pull-uniprot`, `model/cluster-split`, `app/results-page`.
-- Small, frequent commits with clear messages. Open a PR, get a quick 👍 from one teammate, merge.
-- Don't commit data or secrets — `data/` and `.env` are gitignored.
-
-## Definition of done (per track)
-
-- **AI track:** two-tier eval table (trivial ≈0.98 vs. real ≈0.7–0.8), model comparison
-  (ESM vs. biophysical vs. composition baseline), confusion matrix, feature importance — all in the README.
-- **Easy on the Eyes:** the results page is clean, legible, and deliberate.
-- **Overall:** working end-to-end demo on the real domain + a crisp 2–3 min pitch.
-
-## Environment
-
-```bash
-cp .env.example .env     # add GEMINI_API_KEY
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-```
+- Keep changes scoped and describe their behavior and validation in the PR.
+- Preserve the distinction between family classification and measured protective
+  efficacy. Recorded scientific results and limitations live in
+  [docs/METHODS.md](docs/METHODS.md) and [docs/results/](docs/results/).
+- Follow [release checks](docs/RELEASE.md) and [deployment documentation](deploy/README.md)
+  before deploying. Passing mocked tests does not verify a live model or login flow.

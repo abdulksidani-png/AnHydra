@@ -65,5 +65,6 @@ builds without the data simply show no examples.
 
 ## Deploying
 
-The site has no sign-in, so the backend runs with `PUBLIC_ACCESS=true`. The steps for anhydra.work, including
-the Caddy config (`deploy/Caddyfile.site`), are in [deploy/README.md](../../deploy/README.md).
+Choose Auth0 or public access using the matching frontend and backend settings above.
+The steps for anhydra.work, including the Caddy config (`deploy/Caddyfile.site`),
+are in [deploy/README.md](../../deploy/README.md).

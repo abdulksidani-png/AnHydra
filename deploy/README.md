@@ -1,19 +1,21 @@
-# TardiScreen deployment
+# AnHydra deployment
 
 Follow [AUTH.md](AUTH.md) before rollout: configure Auth0 signed admission claims,
-provision PostgreSQL, run migrations, and inject production settings. `/score` and
-`/me` require eligible users' API access tokens; `/health` stays public.
+provision PostgreSQL, run migrations, and inject production settings when using
+Auth0. In that mode, `/score` and `/me` require eligible users' API access tokens.
+The explicit public-access mode is documented below. `/health` and `/ready` stay public.
 
 Release validation and deployment gates are in [RELEASE.md](../docs/RELEASE.md).
-The restored React frontend is optional: use `Caddyfile.react.template` when
-serving its build, and proxy `/me` and `/ready` alongside `/score` and `/health`.
-The existing `Caddyfile.template` and `Caddyfile.anhydra` serve the FastAPI page.
+Use `Caddyfile.site` for `frontend/anhydra-site`, the current React site. The
+older integrated React app uses `Caddyfile.react.template`. Both proxy `/me` and
+`/ready` alongside `/score` and `/health`. The existing `Caddyfile.template` and
+`Caddyfile.anhydra` serve the FastAPI page.
 Do not replace a live React site's configuration with the FastAPI-only variant
 unless deliberately switching interfaces.
 
-## AnHydra domain configuration
+## Built-in FastAPI page configuration
 
-The current app serves its page from `app/static/index.html` through FastAPI.
+For the built-in interface, FastAPI serves `app/static/index.html`.
 Proxy all requests to `127.0.0.1:8000`; no separate frontend build or static
 web root is required. The retired `frontend/dist/` build should not be deployed.
 
@@ -39,16 +41,18 @@ starting the app; restart the service after changing that environment file.
 
 ## Serving the AnHydra site without sign-in
 
-`frontend/anhydra-site` is the site built in Duda. It has no sign-in, so the backend
+`frontend/anhydra-site` supports an explicit public mode. In this mode the backend
 runs with `PUBLIC_ACCESS=true`: `/score` is open to everyone and Auth0 and PostgreSQL
 are not needed. Every score also calls Gemini with the server's key, so anyone can spend
 that quota. On the server, from the checkout:
 
-1. Update the checkout to the branch with the site, then install the backend's current
+1. Update the checkout to the reviewed release commit, then install the backend's current
    dependencies into the existing environment: `.venv/bin/pip install -e .`
 2. Add `PUBLIC_ACCESS=true` to the checkout's `.env` and restart: `systemctl restart tardiscreen`.
    Check `curl --fail http://127.0.0.1:8000/health`.
-3. Pick the example buttons from the training data, then build the site (Node 20 or newer):
+3. Set `VITE_PUBLIC_ACCESS=true` with no Auth0 settings in the site's
+   `.env.production.local`. Pick the example buttons from the training data, then build
+   the site (Node 20 or newer):
    `.venv/bin/python scripts/pick_examples.py > frontend/anhydra-site/public/examples.json`, then
    `cd frontend/anhydra-site && npm ci && npm run build`.
    Copy it into place: `mkdir -p /var/www/anhydra-site && cp -r dist/. /var/www/anhydra-site/`.
@@ -77,11 +81,12 @@ In the Auth0 dashboard:
 4. **Actions**: create a Login / Post Login Action from `deploy/auth0-post-login.js`, deploy it,
    and add it to the Login flow.
 
-On the server, from the checkout, deploy the site first (it works with either backend mode), then
-switch the backend:
+Coordinate the frontend build and backend switch: Auth0 mode checks `/me`, so an
+Auth0 build cannot validate real accounts against a public-mode backend. From the checkout:
 
 1. Put the three public settings in `frontend/anhydra-site/.env.production.local`:
-   `VITE_AUTH0_DOMAIN`, `VITE_AUTH0_CLIENT_ID`, `VITE_AUTH0_AUDIENCE`. Rebuild and copy the site
+   `VITE_AUTH0_DOMAIN`, `VITE_AUTH0_CLIENT_ID`, `VITE_AUTH0_AUDIENCE`, and remove
+   `VITE_PUBLIC_ACCESS=true`. Rebuild and copy the site
    as in step 3 above.
 2. `sudo bash deploy/setup_postgres.sh /root/tardiscreen` creates the account database and writes
    `DATABASE_URL` into `.env`.
@@ -93,27 +98,6 @@ switch the backend:
 
 To go back to open access, set `PUBLIC_ACCESS=true` again, restart, and rebuild the site with
 `VITE_PUBLIC_ACCESS=true` in place of the three Auth0 settings.
-
-## Verified deployment, October 17, 2026
-
-- Host: `64.177.42.245`, checkout `/root/tardiscreen`, revision `26c3a12`.
-- Installed Caddy from its official stable Ubuntu repository.
-- Installed `/etc/systemd/system/tardiscreen.service` using this template with
-  `@@APP_DIR@@=/root/tardiscreen`; enabled and running as a dynamic non-root user.
-- Caddy configuration currently uses `http://64.177.42.245` as its site address,
-  pending a registered domain. Original configuration is backed up at
-  `/etc/caddy/Caddyfile.pre-tardiscreen`.
-- Both services enabled; app restart tested. Firewall allows 22, 80, and 443.
-  Uvicorn listens only on localhost port 8000.
-- Copied the existing Hugging Face cache into the app's separate cache directory.
-- Public home page returned HTTP 200 from the deployment computer.
-- Public `/health` returned `{"status":"ok","model_trained":false}`.
-- `/score` returned HTTP 503 as expected because `data/models.joblib` is absent.
-- Pending: data owner supplies the model, Gemini key and live API verification,
-  domain/DNS/HTTPS, successful scoring, and phone check over cellular data.
-
-The earlier direct server
-check found it missing. No data pipeline commands were run during deployment.
 
 ## Before installation
 

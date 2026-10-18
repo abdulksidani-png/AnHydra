@@ -1,7 +1,7 @@
 # Secrets
 .env
 
-# Data + model artifacts (don't commit; regenerate from data.py)
+# Data + model artifacts (see the staged pipeline in README.md)
 data/*.csv
 data/*.npy
 data/*.npz
@@ -28,7 +28,7 @@ venv/
 .vscode/
 .idea/
 
-# Retired frontend build artifacts
+# Local frontend build artifacts
 /frontend/node_modules/
 /frontend/dist/
 

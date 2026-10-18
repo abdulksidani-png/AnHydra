@@ -46,7 +46,8 @@ contrast is a better result than either number alone.
 ## Results
 
 ROC-AUC under 5-fold cross-validation **split by sequence cluster** (CD-HIT 40% identity), never by
-row, so homologs cannot sit on both sides of a split.
+row. Clusters stay within one partition, but related sequences can remain in different clusters;
+this split does not eliminate all homology between training and test sets.
 
 - **trivial** — protective vs. *ordered* folded proteins. A sanity check.
 - **real** — protective vs. *other disordered* proteins, matched one-to-one on disorder coverage and
@@ -98,8 +99,9 @@ and these experiments do not establish performance for arbitrary uncatalogued or
 The CNN is trained from scratch on raw sequence: no pretraining, no hand-designed features, no motif
 database. Its convolution filters are pattern detectors, so after training we can ask what makes them
 fire. Ranking filters by how well their activation separates the classes and reading the
-strongest-activating windows gives the patterns it found by itself — 48 filters cleared the
-threshold:
+strongest-activating windows produced 48 exported motifs (up to 12 per kernel width, above the
+configured activation-AUC threshold). These rankings describe the fitted model, not independent
+test-set performance:
 
 | filter | AUC | learned pattern |
 | --- | --- | --- |
@@ -132,8 +134,9 @@ the segment.
 1,049 sequences, recovered a motif that plant biologists named and published decades ago.
 
 It is also the *right* motif for this dataset rather than the expected one. We predicted glycine and
-serine repeats, the CAHS signature. The dataset contains **no CAHS proteins** — it is 308 LEA and 198
-dehydrins — so the network learned what is actually there. Had it produced what we expected, we would
+serine repeats, the CAHS signature. The dataset contains **no CAHS proteins** — the 529 matched
+positives comprise 308 LEA, 198 dehydrins, 21 other protective proteins and 2 hydrophilins — so the
+network learned what is actually there. Had it produced what we expected, we would
 have had more reason to suspect we were fooling ourselves.
 
 This is the one result none of the other four models can produce. ESM-2 scores better; it cannot tell
@@ -142,15 +145,17 @@ you what it saw.
 ## We did not believe our own number
 
 The real task first scored **0.987**, far above what we predicted. We treated that as a bug. Four
-hypotheses, four tests: cross-validation leakage (ruled out — shuffled labels sit at chance), length
-(ruled out — length-only AUC fell to 0.514 while ESM-2 held), source database (removed), and disorder
+hypotheses, four tests: cross-validation leakage (a shuffled-label check sat at chance), length
+(length-only AUC fell to 0.514 while ESM-2 held), source database (removed), and disorder
 itself — **which turned out to be the real problem.** The original negatives were folded proteins
 with a floppy tail, median disorder coverage 0.15 against 0.88 for the positives.
 
 So we rebuilt the entire negative set from genuinely disordered UniProt proteins, matched one-to-one
 on disorder coverage *and* length under the caliper from
 [Austin (2011)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3120982/). Both variables came out
-balanced (|SMD| ≤ 0.015, threshold 0.10), so neither can explain the result.
+balanced before downstream filtering (|SMD| ≤ 0.015, threshold 0.10). The committed final evaluation
+contains 529 positives and 520 negatives; that initial balance check does not establish balance
+after exclusions.
 
 Every threshold, its published source, the full confound table and all nine limitations are in
 **[docs/METHODS.md](docs/METHODS.md)**.
@@ -161,7 +166,7 @@ Every threshold, its published source, the full confound table and all nine limi
 anhydra/  (repo: tardiscreen)
 ├── app/
 │   ├── main.py             FastAPI: sequence in → score + explanation out
-│   └── static/index.html   the results page
+│   └── static/index.html   built-in fallback results page
 ├── src/tardiscreen/
 │   ├── data.py             pull + label UniProt / DisProt / MobiDB sequences
 │   ├── build_negatives.py  candidate pool of genuinely disordered proteins
@@ -184,13 +189,21 @@ anhydra/  (repo: tardiscreen)
 │   ├── DEMO.md             the presentation + live-demo script
 │   ├── EXPLAINER.md        the whole project in plain English
 │   └── results/            the CSVs and figures behind every number above
-├── frontend/               React UIs (separate from the served page; see their READMEs)
-│   └── anhydra-site/       the Duda-built site: landing, screener, about
+├── frontend/               React UIs; older variants remain for compatibility
+│   └── anhydra-site/       current site: landing, screener, about, privacy
 ├── deploy/                 systemd unit + Caddy config for the Vultr host
 └── scripts/check_site.sh   is the live site demo-ready?
 ```
 
 ## Quick start
+
+Copy `.env.example` to `.env`. For local scoring without Auth0 or PostgreSQL, set
+`APP_ENV=development` and `AUTH_DEV_ANONYMOUS=true` in that file and keep the server
+bound to localhost. For production, follow [deployment setup](deploy/README.md)
+and select matching frontend/backend authentication modes explicitly.
+
+The commands below rebuild the data and model from scratch. An existing deployment
+with compatible artifacts does not need retraining.
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
@@ -205,14 +218,16 @@ python -m tardiscreen.embed         # ESM-2 embeddings (CPU is fine)
 python -m tardiscreen.evaluate      # cluster-split CV
 python -m tardiscreen.model         # writes data/models.joblib for the app
 
-uvicorn app.main:app --reload       # http://127.0.0.1:8000
+uvicorn app.main:app --env-file .env --host 127.0.0.1 --reload
 ```
 
-Copy `.env.example` to `.env` and set `GEMINI_API_KEY` for the plain-language readout. Without it the
+Set `GEMINI_API_KEY` in `.env` for the plain-language readout. Without it the
 app falls back to a local template rather than failing. Without `data/models.joblib`, `/score`
 returns 503 rather than inventing a number.
 
-To check the deployed site: `bash scripts/check_site.sh https://anhydra.work`
+For the current React site, follow [its README](frontend/anhydra-site/README.md).
+To check the deployed site: `bash scripts/check_site.sh https://anhydra.work`.
+Protected deployments require `AUTH_HEADER_FILE` as described in [backend operations](deploy/AUTH.md).
 
 ## Sponsor stack
 
