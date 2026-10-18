@@ -84,7 +84,7 @@
 <rect x="714.2" y="484.0" width="34.0" height="34.0" rx="8" class="soft"/>
 <g transform="translate(721.2,491) scale(0.833)"><g class="ics"><circle cx="12" cy="12" r="10"/><ellipse cx="12" cy="12" rx="4.2" ry="10"/><path d="M2 12h20M3.6 6.5h16.8M3.6 17.5h16.8"/></g></g>
 <line x1="50" y1="550" x2="770" y2="550" stroke="#c3c9ce" stroke-dasharray="3 3"/>
-<text x="410.0" y="566.0" class="sm" text-anchor="middle">4 across on desktop · 2 on tablet · 1 on phone · icon widgets · each shows only when its link exists</text>
+<text x="410.0" y="566.0" class="sm" text-anchor="middle">4 across on desktop · 2 on tablet · 1 on phone · icon widgets · website links to LinkedIn until a personal site is added</text>
 <rect x="50.0" y="588.0" width="720.0" height="34.0" rx="6" class="zone"/>
 <text x="410.0" y="609.0" class="sm" text-anchor="middle">site footer already exists (not part of this page)</text>
 </svg>

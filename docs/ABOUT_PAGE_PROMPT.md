@@ -47,7 +47,7 @@ A heading and four cards in a responsive grid: four across on desktop, two on ta
 phone. Each card has **only**:
 
 - the member's **name**, and
-- a row of up to three **icon widgets**: GitHub, LinkedIn, Website.
+- a row of three **icon widgets**: GitHub, LinkedIn, Website.
 
 No photos, roles, bios or descriptions.
 
@@ -60,7 +60,8 @@ Icon widgets:
   Hover and focus states come from the site's existing button styles.
 - Each widget is a link with an accessible name that includes the person, for example
   `aria-label="Abdul Sidani on GitHub"`, plus a matching tooltip (`title`).
-- Render a widget only when its URL exists.
+- All three widgets render on every card. If a URL is ever removed from the data, hide that
+  widget rather than rendering a dead link.
 - Links open in a new tab with `rel="noopener noreferrer"`.
 - Make each widget a comfortable tap target on phones (about 44 × 44 px), sized with the site's
   existing spacing tokens.
@@ -69,12 +70,16 @@ Keep the member data in one list so content edits never touch markup:
 
 | Name | GitHub | LinkedIn | Website |
 | --- | --- | --- | --- |
-| Abdul Sidani | https://github.com/abdulksidani-png | https://www.linkedin.com/in/abdulrahman-sidani/ | _TBD_ |
-| Benjamin Berrizbeitia | https://github.com/Benberrizb | https://www.linkedin.com/in/berrizbeitia/ | _TBD_ |
-| Gayathri Gunda | https://github.com/Gayathri-Gunda | https://www.linkedin.com/in/gayathri-gunda/ | _TBD_ |
-| Vitor Ribeiro | https://github.com/bolachala | https://www.linkedin.com/in/vitor-gonzaga-feres-ribeiro-41b572339/ | _TBD_ |
+| Abdul Sidani | https://github.com/abdulksidani-png | https://www.linkedin.com/in/abdulrahman-sidani/ | https://www.linkedin.com/in/abdulrahman-sidani/ |
+| Benjamin Berrizbeitia | https://github.com/Benberrizb | https://www.linkedin.com/in/berrizbeitia/ | https://www.linkedin.com/in/berrizbeitia/ |
+| Gayathri Gunda | https://github.com/Gayathri-Gunda | https://www.linkedin.com/in/gayathri-gunda/ | https://www.linkedin.com/in/gayathri-gunda/ |
+| Vitor Ribeiro | https://github.com/bolachala | https://www.linkedin.com/in/vitor-gonzaga-feres-ribeiro-41b572339/ | https://www.linkedin.com/in/vitor-gonzaga-feres-ribeiro-41b572339/ |
 
-Leave _TBD_ entries empty in the data (those widgets simply won't render). Do not invent URLs.
+The **Website** widget is always shown. Until a member has a personal site, its URL is a
+placeholder pointing to their LinkedIn, so the website field can be swapped for a real URL later
+with no other changes. Keep `website` a separate field in the data (not derived from `linkedin`)
+and mark each placeholder with a `// TODO: replace with personal website` comment. Do not invent
+URLs.
 
 ## Requirements
 
