@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 type Step = { target: string; title: string; body: string };
 
@@ -114,7 +115,9 @@ export function Tour({ step, setStep, finish }: { step: number | null; setStep: 
   const cardLeft = Math.min(Math.max(12, rect.left), Math.max(12, window.innerWidth - 332));
   const last = step === STEPS.length - 1;
 
-  return (
+  // Rendered into <body>: the screen page's entry animation makes it the containing block for fixed
+  // descendants, which would offset the spotlight from the elements it measures.
+  return createPortal(
     <div className="tour" role="presentation">
       <div
         className="tour-spot"
@@ -150,6 +153,7 @@ export function Tour({ step, setStep, finish }: { step: number | null; setStep: 
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
