@@ -274,6 +274,48 @@ button{font:600 15px/1 var(--serif); border-radius:6px; border:1px solid transpa
 .motif.none{background:rgba(255,255,255,.02); border-left-color:var(--rule-strong)}
 .motif.none .seq{color:var(--silt-deep)}
 
+
+/* ===================== Neighbour map =====================
+   Radius is 1 - cosine, rescaled across the returned set so the spread is visible. It is
+   proximity in ESM-2 representation space and nothing else: no alignment, no identity. */
+.nbmap{position:relative; width:100%; max-width:460px; margin:0 auto}
+.nbmap svg{width:100%; height:auto; display:block; overflow:visible}
+.nbmap .ring{fill:none; stroke:var(--rule); stroke-dasharray:3 5}
+.nbmap .spoke{stroke:var(--rule-faint); stroke-width:1}
+.nbmap .you{fill:var(--foam)}
+.nbmap .youring{fill:none; stroke:var(--foam); stroke-opacity:.35}
+.nbmap .node{cursor:pointer; transform-box:fill-box; transform-origin:center;
+  animation:nbpop .5s cubic-bezier(.22,1,.36,1) backwards}
+@keyframes nbpop{from{opacity:0; transform:scale(.2)}}
+.nbmap .node:hover circle,.nbmap .node:focus circle{stroke:var(--foam); stroke-width:2}
+.nbmap .link{stroke-width:1.2; stroke-opacity:.35;
+  animation:nbdraw .6s ease backwards}
+@keyframes nbdraw{from{opacity:0}}
+.nbmap .rlab{fill:var(--silt-deep); font:400 9.5px var(--mono)}
+.nb-legend{display:flex; flex-wrap:wrap; gap:8px 16px; justify-content:center; margin-top:14px;
+  font:400 12px/1 var(--mono); color:var(--silt-deep)}
+.nb-legend span{display:inline-flex; align-items:center; gap:6px}
+.nb-legend i{width:9px; height:9px; border-radius:50%}
+.nb-read{min-height:46px; margin:14px 0 0; padding:10px 13px; border-radius:6px;
+  background:rgba(4,13,22,.5); border:1px solid var(--rule-faint); text-align:center}
+.nb-read b{font:600 14px/1.5 var(--mono); color:var(--glow)}
+.nb-read span{display:block; font-size:12.5px; color:var(--silt-deep); margin-top:2px}
+.nb-read a{font-size:12.5px}
+
+/* ===================== Shape panel ===================== */
+.shape-wrap{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,260px); gap:22px;
+  align-items:start}
+#ensemble{width:100%; height:auto; display:block; border-radius:6px;
+  background:rgba(4,13,22,.5); border:1px solid var(--rule-faint)}
+.plddt dt{font:400 11px/1.4 var(--mono); color:var(--silt-deep); letter-spacing:.06em;
+  text-transform:uppercase}
+.plddt dd{margin:3px 0 14px; font:600 21px/1.1 var(--mono); color:var(--foam)}
+.plddt dd small{display:block; font:400 12.5px/1.45 var(--serif); color:var(--silt); margin-top:5px}
+.plddt .pending{color:var(--silt-deep); font-weight:400; font-size:15px}
+.illus{margin:12px 0 0; font-size:12.5px; color:var(--silt-deep); line-height:1.5;
+  padding-left:11px; border-left:1px solid var(--rule)}
+@media(max-width:720px){ .shape-wrap{grid-template-columns:1fr} }
+
 /* ===================== Bars ===================== */
 .drivers{display:flex;flex-direction:column;gap:15px}
 .driver-top{display:flex;justify-content:space-between;gap:12px;font-size:14.5px;margin-bottom:5px}
@@ -535,7 +577,7 @@ footer .mono{font-size:12px}
     <div id="loading" hidden class="skeleton stack" aria-busy="true" aria-label="Scoring the sequence">
       <div class="card"><div class="shimmer"></div><div class="shimmer"></div><div class="shimmer"></div></div>
       <div class="card"><div class="shimmer"></div><div class="shimmer"></div></div>
-      <p class="muted" style="text-align:center">Embedding the sequence with ESM-2… the first request after a restart takes about 15 seconds while the model loads.</p>
+      <p class="muted" style="text-align:center" id="load-copy" aria-live="polite">Embedding the sequence with ESM-2…</p>
     </div>
 
     <div id="results" aria-live="polite" hidden class="stack">
@@ -615,20 +657,47 @@ footer .mono{font-size:12px}
         <div class="axis"><span>← argues against</span><span>argues for →</span></div>
       </div>
 
-      <div class="row">
-        <div class="card card--sub reveal" style="--r:2">
-          <h2>Nearest protective sequence</h2>
-          <p class="acc" id="homolog">—</p>
-          <p class="muted" id="homolog-note"></p>
+      <div class="card card--sub reveal" style="--r:2">
+        <h2>Nearest known protective sequences</h2>
+        <p class="lede">Each ring is a step away from this sequence in the language model's
+          representation space. Closer means the model reads the two as more alike. This is
+          <em>not</em> a sequence alignment: no percent identity or E-value is implied.</p>
+        <div class="nbmap" id="nbmap"></div>
+        <div class="nb-legend" id="nblegend"></div>
+        <p class="nb-read" id="nbread"></p>
+      </div>
+
+      <div class="card card--sub reveal" style="--r:3">
+        <h2>Shape</h2>
+        <p class="lede">Protective proteins are intrinsically disordered — they have no single
+          folded shape, and that is the mechanism rather than a gap in the data. A drawing of one
+          fixed structure would assert the opposite.</p>
+        <div class="shape-wrap">
+          <div>
+            <canvas id="ensemble" width="760" height="470"></canvas>
+            <p class="illus"><b>Illustration, not a prediction.</b> Several plausible conformations
+              of this chain drawn at once, coloured by residue chemistry and seeded from the
+              sequence itself. A disordered protein moves between shapes like these; no one of them
+              is "the" structure.</p>
+          </div>
+          <dl class="plddt">
+            <dt>AlphaFold confidence</dt>
+            <dd id="plddt"><span class="pending">checking…</span></dd>
+            <dt>Nearest sequence</dt>
+            <dd id="afacc" style="font-size:16px">—</dd>
+          </dl>
         </div>
-        <div class="card card--sub reveal" style="--r:3">
+      </div>
+
+      <div class="row">
+        <div class="card card--sub reveal" style="--r:4">
           <h2>Specimen</h2>
           <p class="acc" id="spec-len">—</p>
           <p class="muted">standard residues scored, after removing whitespace and an optional FASTA header. Inputs are limited to 1,022 residues.</p>
         </div>
       </div>
 
-      <div class="card card--sub reveal" style="--r:4">
+      <div class="card card--sub reveal" style="--r:5">
         <h2>Diagnostic characters</h2>
         <p class="lede">All nine interpretable features. The three that drove the call are marked.</p>
         <div class="chars" id="chars"></div>
@@ -751,6 +820,7 @@ async function run(){
   btn.disabled = true; btn.textContent = "Screening…";
   $("results").hidden = true; $("idle").hidden = true; $("loading").hidden = false;
   $("results").setAttribute("aria-busy", "true");
+  startLoadingCopy();
   try {
     const res  = await fetch("/score", {method:"POST",
       headers:{"content-type":"application/json"}, body: JSON.stringify({sequence})});
@@ -762,6 +832,7 @@ async function run(){
   } finally {
     btn.disabled = false; btn.textContent = "Screen sequence";
     $("loading").hidden = true;
+    stopLoadingCopy();
     $("results").setAttribute("aria-busy", "false");
   }
 }
@@ -806,12 +877,9 @@ function render(d, raw){
     ? "Written by the offline template — the Gemini API was unavailable for this request."
     : "Written by Gemini from the model's output. It is given the score, the call and the feature contributions, and nothing else.";
 
-  $("homolog").textContent = d.nearest_homolog || "none";
-  $("homolog-note").innerHTML = d.nearest_homolog
-    ? `Closest training positive in ESM-2 embedding space (cosine). This is a neighbour in the model's
-       representation, <em>not</em> an alignment — no percent identity is implied.
-       <a href="https://www.uniprot.org/uniprotkb/${encodeURIComponent(d.nearest_homolog)}" target="_blank" rel="noopener">Look it up on UniProt →</a>`
-    : "No close neighbour among the training positives.";
+  renderNeighbours(d.neighbours, d.nearest_homolog);
+  drawEnsemble(seq);
+  loadAlphaFold(d.nearest_homolog);
 
   $("spec-len").textContent = (d.features.length || seq.length) + " aa";
 
@@ -833,6 +901,216 @@ function render(d, raw){
   $("idle").hidden = true;
   $("results").hidden = false;
   $("results").scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+
+/* The wait is honest: the copy changes as it lengthens, and there is no progress bar,
+   because the duration is genuinely unknown until the model answers. */
+const LOAD_STAGES = [
+  [0,     "Embedding the sequence with ESM-2\u2026"],
+  [2600,  "Reading 480 numbers out of the language model\u2026"],
+  [6000,  "Still going \u2014 the first request after a restart loads the model into memory."],
+  [14000, "Nearly a minute on a cold start is normal. The next one takes about a second."],
+];
+let loadTimers = [];
+
+function startLoadingCopy(){
+  stopLoadingCopy();
+  const copy = $("load-copy");
+  if (!copy) return;
+  loadTimers = LOAD_STAGES.map(([at, text]) => setTimeout(() => { copy.textContent = text; }, at));
+}
+
+function stopLoadingCopy(){
+  loadTimers.forEach(clearTimeout);
+  loadTimers = [];
+}
+
+/* ============================ Neighbour map ============================
+   Real data only: `neighbours` is [accession, cosine, family] from /score. Cosine is
+   similarity in ESM-2 representation space. Radius is 1 - cosine, rescaled across the
+   returned set so a tight cluster still spreads legibly, with the true values on the rings. */
+const FAMILY_COLOUR = {
+  dehydrin: "#44d3c4", LEA: "#6fb6ff", CAHS: "#e9c46a", SAHS: "#e9c46a", MAHS: "#e9c46a",
+  hydrophilin: "#ef7d5a", other: "#7d93a8", "": "#7d93a8",
+};
+const famColour = (f) => FAMILY_COLOUR[f] ?? FAMILY_COLOUR.other;
+
+function renderNeighbours(neighbours, nearest) {
+  const map = $("nbmap"), legend = $("nblegend"), read = $("nbread");
+  if (!neighbours || !neighbours.length) {
+    map.innerHTML = "";
+    legend.innerHTML = "";
+    read.innerHTML = nearest
+      ? `<b>${esc(nearest)}</b><span>the single nearest training sequence. This server has not
+         been updated to return the full neighbour list, so the map cannot be drawn.</span>`
+      : `<span>No close neighbour among the training positives.</span>`;
+    return;
+  }
+
+  const W = 460, C = W / 2, RMAX = 176, RMIN = 42;
+  const dist = neighbours.map(([, cos]) => 1 - cos);
+  const lo = Math.min(...dist), hi = Math.max(...dist);
+  // A flat set would collapse onto one ring; spread it instead of faking separation.
+  const place = (d) => (hi - lo < 1e-6 ? (RMIN + RMAX) / 2
+                                       : RMIN + ((d - lo) / (hi - lo)) * (RMAX - RMIN));
+
+  const ringCos = [neighbours[0][1], neighbours[neighbours.length - 1][1]];
+  const rings = ringCos.map((cos, i) => {
+    const r = place(1 - cos);
+    return `<circle class="ring" cx="${C}" cy="${C}" r="${r.toFixed(1)}"/>
+            <text class="rlab" x="${C}" y="${(C - r - 5).toFixed(1)}" text-anchor="middle"
+                  >cos ${cos.toFixed(2)}</text>`;
+  }).join("");
+
+  const nodes = neighbours.map(([acc, cos, fam], i) => {
+    // Half-step offset keeps the vertical axis free for the cosine ring labels.
+    const angle = ((i + 0.5) / neighbours.length) * Math.PI * 2 - Math.PI / 2;
+    const r = place(1 - cos);
+    const x = C + Math.cos(angle) * r, y = C + Math.sin(angle) * r;
+    const colour = famColour(fam);
+    const delay = 120 + i * 55;
+    return `<line class="link" x1="${C}" y1="${C}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}"
+                  stroke="${colour}" style="animation-delay:${delay}ms"/>
+            <g class="node" style="animation-delay:${delay}ms" tabindex="0" role="button"
+               data-acc="${esc(acc)}" data-cos="${cos}" data-fam="${esc(fam)}"
+               aria-label="${esc(acc)}, cosine ${cos.toFixed(3)}${fam ? ", " + esc(fam) : ""}">
+              <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="9" fill="${colour}"
+                      fill-opacity=".85" stroke="${colour}"/>
+            </g>`;
+  }).join("");
+
+  map.innerHTML = `<svg viewBox="0 0 ${W} ${W}" role="img"
+       aria-label="Nearest protective sequences by embedding similarity">
+      ${rings}
+      <circle class="youring" cx="${C}" cy="${C}" r="17"/>
+      <circle class="you" cx="${C}" cy="${C}" r="6"/>
+      <text class="rlab" x="${C}" y="${C + 32}" text-anchor="middle">this sequence</text>
+      ${nodes}
+    </svg>`;
+
+  const families = [...new Set(neighbours.map(([, , f]) => f || "other"))];
+  legend.innerHTML = families.map((f) =>
+    `<span><i style="background:${famColour(f)}"></i>${esc(f)}</span>`).join("");
+
+  const show = (acc, cos, fam) => {
+    read.innerHTML = `<b>${esc(acc)}</b><span>cosine ${Number(cos).toFixed(3)}` +
+      `${fam ? " · " + esc(fam) : ""} · embedding proximity, not alignment</span>` +
+      `<a href="https://www.uniprot.org/uniprotkb/${encodeURIComponent(acc)}" target="_blank"
+          rel="noopener">Look it up on UniProt →</a>`;
+  };
+  map.querySelectorAll(".node").forEach((node) => {
+    const pick = () => show(node.dataset.acc, node.dataset.cos, node.dataset.fam);
+    node.addEventListener("mouseenter", pick);
+    node.addEventListener("focus", pick);
+    node.addEventListener("click", pick);
+  });
+  const [acc0, cos0, fam0] = neighbours[0];
+  show(acc0, cos0, fam0);
+}
+
+/* ============================ Disordered-chain illustration ============================
+   Drawn from the sequence, seeded by it so the same protein always looks the same. It is a
+   picture of what "no fixed shape" means, NOT a structure prediction, and says so on the page. */
+function mulberry32(seed) {
+  return function () {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function drawEnsemble(seq) {
+  const cv = $("ensemble");
+  if (!cv || !cv.getContext) return;
+  const ctx = cv.getContext("2d");
+  const W = cv.width, H = cv.height, PAD = 18;
+  ctx.clearRect(0, 0, W, H);
+
+  let seed = 0;
+  for (let i = 0; i < seq.length; i++) seed = (seed * 31 + seq.charCodeAt(i)) | 0;
+
+  const STEP = Math.max(1, Math.ceil(seq.length / 150));   // keep the walk readable
+  const CHAINS = 5;
+
+  // Walk freely first, then fit the whole ensemble to the canvas. Steering a walk away from
+  // the edges makes it oscillate against its own correction; scaling afterwards cannot.
+  const chains = [];
+  for (let c = 0; c < CHAINS; c++) {
+    const rand = mulberry32(seed + c * 7919);
+    let x = 0, y = 0, angle = rand() * Math.PI * 2;
+    const pts = [[0, 0, seq[0]]];
+    for (let i = STEP; i < seq.length; i += STEP) {
+      const residue = seq[i];
+      // Glycine and proline are the flexible residues, so the chain turns harder there. A
+      // visual mnemonic for flexibility, not a physical simulation.
+      const flex = (residue === "G" || residue === "P") ? 1.7 : 1.0;
+      angle += (rand() - 0.5) * 0.95 * flex;
+      x += Math.cos(angle);
+      y += Math.sin(angle);
+      pts.push([x, y, residue]);
+    }
+    chains.push(pts);
+  }
+
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const pts of chains) for (const [x, y] of pts) {
+    if (x < minX) minX = x; if (x > maxX) maxX = x;
+    if (y < minY) minY = y; if (y > maxY) maxY = y;
+  }
+  const scale = Math.min((W - PAD * 2) / Math.max(maxX - minX, 1e-6),
+                         (H - PAD * 2) / Math.max(maxY - minY, 1e-6));
+  const ox = (W - (maxX - minX) * scale) / 2 - minX * scale;
+  const oy = (H - (maxY - minY) * scale) / 2 - minY * scale;
+
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  for (let c = CHAINS - 1; c >= 0; c--) {                  // lead chain drawn last, on top
+    const lead = c === 0;
+    ctx.lineWidth = lead ? 3.4 : 2;
+    ctx.globalAlpha = lead ? 0.95 : 0.3;
+    const pts = chains[c];
+    for (let i = 1; i < pts.length; i++) {
+      const [px, py] = pts[i - 1], [x, y, residue] = pts[i];
+      ctx.beginPath();
+      ctx.moveTo(px * scale + ox, py * scale + oy);
+      ctx.lineTo(x * scale + ox, y * scale + oy);
+      ctx.strokeStyle = CLASS[residue] ? cssVar("--" + CLASS[residue]) : "#7d93a8";
+      ctx.stroke();
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "#7d93a8";
+}
+
+/* ============================ AlphaFold confidence ============================
+   For a disordered protein AlphaFold reports LOW confidence, and that is the point: it is
+   uncertain because there is no single structure to predict. Fetched for the nearest known
+   sequence, because a pasted sequence usually has no entry. Any failure is stated, never faked. */
+async function loadAlphaFold(accession) {
+  const out = $("plddt"), acc = $("afacc");
+  acc.textContent = accession || "none";
+  if (!accession) { out.innerHTML = '<span class="pending">no neighbour to look up</span>'; return; }
+  out.innerHTML = '<span class="pending">checking…</span>';
+  try {
+    const res = await fetch(`https://alphafold.ebi.ac.uk/api/prediction/${encodeURIComponent(accession)}`);
+    if (!res.ok) throw new Error(String(res.status));
+    const entry = (await res.json())[0];
+    const mean = entry && typeof entry.globalMetricValue === "number" ? entry.globalMetricValue : null;
+    if (mean === null) throw new Error("no score");
+    const verdict = mean < 50
+      ? "Very low. AlphaFold cannot place these residues because there is no fixed structure to place — the disorder is the mechanism."
+      : mean < 70
+      ? "Low. Largely disordered, which is what the protective families look like."
+      : "Moderate to high — unusual here, and worth a look: this neighbour may be more ordered than the family typically is.";
+    out.innerHTML = `${mean.toFixed(1)} <small>mean pLDDT. ${verdict}</small>`;
+  } catch (err) {
+    out.innerHTML = '<span class="pending">not available for this accession</span>';
+  }
 }
 
 function label(name){
