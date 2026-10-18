@@ -14,6 +14,11 @@ from app.database import AccountStoreUnavailable
 
 log = logging.getLogger(__name__)
 
+# The admission values the Auth0 Post Login Action may issue (deploy/auth0-post-login.js):
+# a Google login, an email/password account whose address Auth0 has verified, or a verified
+# institutional (.edu) account.
+ADMISSIONS = ("google", "verified_email", "verified_edu")
+
 
 def unauthorized():
     return HTTPException(401, "Missing or invalid access token.", headers={"WWW-Authenticate": "Bearer"})
@@ -89,7 +94,7 @@ class TokenVerifier:
             ns = self.settings.claim_namespace
             if claims.get(ns + "token_kind") != "user_access" or claims.get("gty") == "client-credentials":
                 raise unauthorized()
-            if claims.get(ns + "admission") not in ("google", "verified_edu"):
+            if claims.get(ns + "admission") not in ADMISSIONS:
                 raise HTTPException(403, "This account is not eligible for access.")
             return claims
         except (jwt.PyJWTError, ValueError, TypeError):
@@ -101,7 +106,7 @@ ANONYMOUS_USER = dict(id=UUID("00000000-0000-0000-0000-000000000001"), display_n
 
 
 def _verified_claims(request: Request):
-    """Return verified token claims, or None in explicit anonymous development mode."""
+    """Return verified token claims, or None when sign-in is off (PUBLIC_ACCESS or the dev bypass)."""
     settings = getattr(request.app.state, "settings", None)
     if settings is None:
         raise HTTPException(503, "Authentication is unavailable.")

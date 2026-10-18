@@ -31,11 +31,15 @@ class Settings:
     def from_env(cls):
         env = os.getenv("APP_ENV", "production")
         bypass = os.getenv("AUTH_DEV_ANONYMOUS", "false")
-        if env not in {"production", "development", "test"} or bypass not in {"true", "false"}:
-            raise ValueError("Invalid APP_ENV or AUTH_DEV_ANONYMOUS")
-        anonymous = bypass == "true"
-        if anonymous and env != "development":
+        public = os.getenv("PUBLIC_ACCESS", "false")
+        if (env not in {"production", "development", "test"} or bypass not in {"true", "false"}
+                or public not in {"true", "false"}):
+            raise ValueError("Invalid APP_ENV, AUTH_DEV_ANONYMOUS or PUBLIC_ACCESS")
+        if bypass == "true" and env != "development":
             raise ValueError("Anonymous access is permitted only in development")
+        # PUBLIC_ACCESS is the deliberate production choice to run without sign-in: /score is open
+        # to everyone, and Auth0 and the account database are neither configured nor contacted.
+        anonymous = bypass == "true" or public == "true"
         issuer = os.getenv("AUTH0_ISSUER", "")
         audience = os.getenv("AUTH0_AUDIENCE", "")
         database = os.getenv("DATABASE_URL", "")

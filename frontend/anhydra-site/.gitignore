@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env.local
+.env.*.local
+.tanstack/
+.DS_Store
+public/examples.json

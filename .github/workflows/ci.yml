@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        directory: [frontend, frontend/anhydra-frontend]
+        directory: [frontend, frontend/anhydra-frontend, frontend/anhydra-site]
     env:
       VITE_AUTH0_DOMAIN: integration.invalid
       VITE_AUTH0_CLIENT_ID: ci-placeholder

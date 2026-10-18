@@ -108,8 +108,9 @@ def test_token_supplied_key_url_is_ignored(api, key):
     get.assert_called_once_with(ISSUER + ".well-known/jwks.json")
 
 
-def test_verified_institution_admission(api, key):
-    assert api.get("/me", headers={"Authorization": "Bearer " + token(key, **{NS + "admission": "verified_edu"})}).status_code == 200
+@pytest.mark.parametrize("admission", ["verified_edu", "verified_email"])
+def test_verified_admissions(api, key, admission):
+    assert api.get("/me", headers={"Authorization": "Bearer " + token(key, **{NS + "admission": admission})}).status_code == 200
 
 
 def test_duplicate_authorization(api, key):
@@ -117,7 +118,7 @@ def test_duplicate_authorization(api, key):
     assert api.get("/me", headers=headers).status_code == 401
 
 
-@pytest.mark.parametrize("admission", [None, False, "microsoft", "edu", "admin"])
+@pytest.mark.parametrize("admission", [None, False, "microsoft", "edu", "admin", "email"])
 def test_admission_before_inference(api, key, admission):
     with patch("app.main.predict") as predict:
         response = api.post("/score", json={"sequence": "A" * 40},
@@ -315,6 +316,35 @@ def test_exact_cors_and_development_startup(monkeypatch):
         response = client.options("/score", headers=headers)
         assert response.status_code == 400
         assert "access-control-allow-origin" not in response.headers
+
+
+def test_public_access_runs_production_without_sign_in(monkeypatch):
+    for name in ("AUTH0_ISSUER", "AUTH0_AUDIENCE", "AUTH0_CLAIM_NAMESPACE", "DATABASE_URL", "CORS_ORIGINS"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.setenv("AUTH_DEV_ANONYMOUS", "false")
+    monkeypatch.setenv("PUBLIC_ACCESS", "true")
+    previous = app.state._state.copy()
+    app.state._state.clear()
+    try:
+        with TestClient(app) as client, patch("app.main.MODELS_PATH") as models:
+            assert app.state.settings.anonymous
+            assert not hasattr(app.state, "verifier") and not hasattr(app.state, "users")
+            models.exists.return_value = False
+            response = client.post("/score", json={"sequence": "A" * 40})
+    finally:
+        app.state._state.clear()
+        app.state._state.update(previous)
+    assert response.status_code == 503  # past admission, stopped only by the missing model
+
+
+def test_public_access_is_off_unless_asked_for(monkeypatch):
+    set_config(monkeypatch)
+    monkeypatch.delenv("PUBLIC_ACCESS", raising=False)
+    assert not Settings.from_env().anonymous
+    monkeypatch.setenv("PUBLIC_ACCESS", "yes")
+    with pytest.raises(ValueError):
+        Settings.from_env()
 
 
 def test_public_health(api):
