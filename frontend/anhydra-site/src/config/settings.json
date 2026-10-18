@@ -31,7 +31,7 @@
     "/about": {
       "meta": [
         {
-          "title": "About us — AnHydra"
+          "title": "AnHydra-about"
         },
         {
           "name": "description",
@@ -42,7 +42,7 @@
     "/privacy": {
       "meta": [
         {
-          "title": "Privacy — AnHydra"
+          "title": "AnHydra-privacy"
         },
         {
           "name": "description",
