@@ -69,10 +69,10 @@ Keep the member data in one list so content edits never touch markup:
 
 | Name | GitHub | LinkedIn | Website |
 | --- | --- | --- | --- |
-| Abdul Sidani | https://github.com/abdulksidani-png | _TBD_ | _TBD_ |
-| Benjamin Berrizbeitia | https://github.com/Benberrizb | _TBD_ | _TBD_ |
-| Gayathri Gunda | https://github.com/Gayathri-Gunda | _TBD_ | _TBD_ |
-| Vitor Ribeiro | _TBD_ | _TBD_ | _TBD_ |
+| Abdul Sidani | https://github.com/abdulksidani-png | https://www.linkedin.com/in/abdulrahman-sidani/ | _TBD_ |
+| Benjamin Berrizbeitia | https://github.com/Benberrizb | https://www.linkedin.com/in/berrizbeitia/ | _TBD_ |
+| Gayathri Gunda | https://github.com/Gayathri-Gunda | https://www.linkedin.com/in/gayathri-gunda/ | _TBD_ |
+| Vitor Ribeiro | https://github.com/bolachala | https://www.linkedin.com/in/vitor-gonzaga-feres-ribeiro-41b572339/ | _TBD_ |
 
 Leave _TBD_ entries empty in the data (those widgets simply won't render). Do not invent URLs.
 
