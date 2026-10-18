@@ -12,7 +12,7 @@ const STEPS: Step[] = [
   {
     target: ".chips",
     title: "No sequence handy?",
-    body: "These buttons fill the box with real proteins from the training data: a dehydrin, a CAHS protein, and one that is not protective, which should score low.",
+    body: "These buttons fill the box with real proteins from the training data: a dehydrin, an LEA protein, and one that is not protective, which should score low.",
   },
   {
     target: "#seq-count",
