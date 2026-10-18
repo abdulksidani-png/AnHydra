@@ -4,7 +4,8 @@ Run from the repository root on a machine that has data/dataset.csv and data/fam
 
     .venv/bin/python scripts/pick_examples.py
 
-Picks one dehydrin, one CAHS protein and one non-protective protein, each 80 to 250 residues of
+Picks one dehydrin, one LEA protein and one disordered protein that is not protective (the matched
+negatives the model is hardest pressed to tell apart), each 80 to 250 residues of
 standard amino acids so it is accepted by /score and fits the residue map. The pick is the
 middle entry by accession, so rerunning on the same data gives the same three.
 """
@@ -30,8 +31,8 @@ def main() -> int:
     df = df[df["sequence"].str.len().between(80, 250) & df["sequence"].map(lambda s: set(s) <= AA)]
     protective = df["label"] == "protective"
     picks = [("dehydrin", "Dehydrin", protective & (df["family"] == "dehydrin")),
-             ("cahs", "CAHS", protective & (df["family"] == "CAHS")),
-             ("negative", "Not protective", ~protective)]
+             ("lea", "LEA", protective & (df["family"] == "LEA")),
+             ("negative", "Not protective", df["label"] == "idp_matched")]
     out = []
     for key, label, mask in picks:
         rows = df[mask].sort_values("sequence_id")
