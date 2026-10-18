@@ -38,6 +38,17 @@
           "content": "The team behind AnHydra and the science of desiccation-protective proteins."
         }
       ]
+    },
+    "/privacy": {
+      "meta": [
+        {
+          "title": "Privacy — AnHydra"
+        },
+        {
+          "name": "description",
+          "content": "What AnHydra collects when you sign in and screen a sequence, and where it goes."
+        }
+      ]
     }
   }
 }

@@ -558,3 +558,6 @@ body { background: transparent; }
 .login-error { position: fixed; top: 4rem; left: 50%; transform: translateX(-50%); z-index: 40; width: min(40rem, calc(100vw - 2rem)); display: flex; gap: 1rem; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; background: #121213; border: 1px solid #5a4a2a; border-left: 3px solid var(--amber); color: var(--foam); }
 .login-error p { margin: 0; font-size: 0.9rem; overflow-wrap: anywhere; }
 .login-error .ghost-btn { margin: 0; flex: none; }
+.page.privacy { max-width: 46rem; }
+.privacy h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); }
+.privacy p { color: var(--silt); line-height: 1.7; }

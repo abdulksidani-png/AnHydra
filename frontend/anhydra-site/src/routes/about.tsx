@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { Globe } from "lucide-react";
 import settings from "@/config/settings.json";
 import { BUILT_WITH, TEAM, type Member } from "@/data/team";
@@ -102,6 +102,10 @@ function AboutPage() {
           ))}
         </ul>
       </section>
+
+      <p className="muted small text-center">
+        <Link to="/privacy">Privacy</Link>
+      </p>
     </main>
   );
 }
