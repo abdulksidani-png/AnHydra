@@ -563,8 +563,9 @@ body { background: transparent; }
 .privacy h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); }
 .privacy p { color: var(--silt); line-height: 1.7; }
 
-/* landing hero: a dark fade behind the headline, and a larger scroll cue */
-.wow::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(0deg, rgba(7, 7, 7, 0.92) 0%, rgba(7, 7, 7, 0.6) 32%, rgba(7, 7, 7, 0) 62%), radial-gradient(ellipse 70% 55% at 22% 78%, rgba(7, 7, 7, 0.65), rgba(7, 7, 7, 0) 70%); }
-.wow-title { position: relative; }
+/* landing hero: a soft dark oval behind the headline, fading out on every side so it never meets a
+   section edge, and a larger scroll cue */
+.wow-title { position: relative; isolation: isolate; }
+.wow-title::before { content: ""; position: absolute; z-index: -1; inset: -150% -25% -150% -15%; pointer-events: none; background: radial-gradient(closest-side, rgba(7, 7, 7, 0.82) 0%, rgba(7, 7, 7, 0.78) 25%, rgba(7, 7, 7, 0.66) 42%, rgba(7, 7, 7, 0.5) 55%, rgba(7, 7, 7, 0.33) 67%, rgba(7, 7, 7, 0.18) 78%, rgba(7, 7, 7, 0.07) 88%, rgba(7, 7, 7, 0) 100%); }
 .scroll-cue { font-size: 0.95rem; letter-spacing: 0.2em; gap: 0.5rem; bottom: 1.5rem; color: var(--foam); }
 .scroll-cue span { height: 2.5rem; background: var(--foam); }
