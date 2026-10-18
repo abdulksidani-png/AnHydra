@@ -232,7 +232,18 @@ export async function requestScore(sequence: string, signal?: AbortSignal): Prom
   if (!r || typeof r.score !== "number" || !Number.isFinite(r.score)) {
     throw new ScoreError(502, "The server's answer did not contain a score.");
   }
-  return r;
+  const raw: unknown = r.neighbours;
+  return { ...r, neighbours: Array.isArray(raw) ? raw.map(toNeighbour).filter((n): n is Neighbour => n !== null) : undefined };
+}
+
+// The backend sends each neighbour as [accession, cosine, family]; the components read named fields.
+function toNeighbour(n: unknown): Neighbour | null {
+  if (Array.isArray(n)) {
+    const [accession, cosine, family] = n;
+    if (typeof accession !== "string" || typeof cosine !== "number") return null;
+    return { accession, cosine, family: typeof family === "string" ? family : null };
+  }
+  return n && typeof n === "object" ? (n as Neighbour) : null;
 }
 
 export async function requestHealth(): Promise<Health | null> {
