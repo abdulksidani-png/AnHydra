@@ -555,3 +555,6 @@ body { background: transparent; }
 .account-menu .ghost-btn { width: 100%; margin: 0; }
 .account-name { margin: 0 0 0.5rem; font-size: 0.85rem; color: var(--silt); overflow-wrap: anywhere; }
 .error-box .ghost-btn + .ghost-btn { margin-left: 0.5rem; }
+.login-error { position: fixed; top: 4rem; left: 50%; transform: translateX(-50%); z-index: 40; width: min(40rem, calc(100vw - 2rem)); display: flex; gap: 1rem; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; background: #121213; border: 1px solid #5a4a2a; border-left: 3px solid var(--amber); color: var(--foam); }
+.login-error p { margin: 0; font-size: 0.9rem; overflow-wrap: anywhere; }
+.login-error .ghost-btn { margin: 0; flex: none; }

@@ -74,6 +74,14 @@ export function Auth0Session({ children }: { children: ReactNode }) {
     };
   }, [subject, getAccessTokenSilently, load]);
 
+  // A refused login comes back as ?error=…&error_description=… on the redirect URL. Keep the message
+  // (the page shows it) but take it out of the address bar, so a reload does not replay it.
+  useEffect(() => {
+    if (error && new URLSearchParams(window.location.search).has("error")) {
+      window.history.replaceState(window.history.state, "", window.location.pathname);
+    }
+  }, [error]);
+
   const signIn = useCallback(
     (returnTo?: string) => void loginWithRedirect({ appState: { returnTo: returnTo ?? window.location.pathname } }),
     [loginWithRedirect],
