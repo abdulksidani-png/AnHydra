@@ -40,8 +40,8 @@ function PrivacyPage() {
         <h2>Other services your browser contacts</h2>
         <p>
           AlphaFold DB (EMBL-EBI), for the predicted structure of the nearest known protein; Google Fonts, for the
-          typefaces; Duda's image server, for the photo on the home page; and GitHub, for the team's profile
-          pictures on the About page.
+          typefaces; GitHub, for the team's profile pictures on the About page; and Duda's image server, only if
+          this site's own copy of the home-page photo fails to load.
         </p>
       </section>
 

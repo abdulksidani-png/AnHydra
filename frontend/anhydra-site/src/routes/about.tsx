@@ -120,7 +120,7 @@ function AboutPage() {
 
       <section aria-labelledby="team" className="flex flex-col gap-4">
         <h2 id="team">Get in touch:</h2>
-        <ul className="m-0 grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 lg:grid-cols-4">
+        <ul className="m-0 grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 xl:grid-cols-4">
           {TEAM.map((m) => (
             <MemberCard key={m.name} member={m} />
           ))}

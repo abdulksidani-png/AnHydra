@@ -574,9 +574,30 @@ body { background: transparent; }
 .page.about { padding-bottom: 2rem; }
 .about .privacy-link { margin: 0; }
 .about .privacy-link a { color: var(--foam); }
-/* The picture is centred between the right edge of the three link buttons (3 x 44px + 2 x 8px = 148px
-   after the card's 1.25rem padding) and the card's right border, and shrinks on narrow cards. */
-.member-avatar-slot { position: absolute; top: 0; bottom: 0; right: 0; left: calc(1.25rem + 148px); display: flex; align-items: center; justify-content: center; pointer-events: none; }
-.member-avatar { pointer-events: auto; display: block; width: min(100px, calc(100% - 16px)); aspect-ratio: 1; border-radius: 50%; overflow: hidden; border: 1px solid #3a3b3d; transition: border-color 180ms; }
+/* The picture sits at the card's right edge, inset by the card's own 1.25rem padding on the top, right
+   and bottom, so it fills the card's height. It shrinks on narrow cards rather than reaching the three
+   link buttons (3 x 44px + 2 x 8px = 148px after the left padding). */
+.member-avatar-slot { position: absolute; top: 1.25rem; bottom: 1.25rem; right: 1.25rem; left: calc(1.25rem + 148px + 0.75rem); display: flex; align-items: center; justify-content: flex-end; pointer-events: none; container-type: size; }
+.member-avatar { pointer-events: auto; display: block; flex: none; width: min(100cqh, 100cqw); height: min(100cqh, 100cqw); border-radius: 50%; overflow: hidden; border: 1px solid #3a3b3d; transition: border-color 180ms; }
 .member-avatar:hover, .member-avatar:focus-visible { border-color: var(--foam); }
 .member-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* The headline's dark oval reaches past the screen edge; clip it sideways so it can't widen the page. */
+.wow { overflow-x: clip; }
+
+/* phones: fit the top bar on a 320px screen, keep the scroll cue clear of the headline, and keep page
+   content from showing through the bar as it scrolls under it */
+@media (max-width: 640px) {
+  .topbar { gap: 0.5rem; padding: 0.5rem 0.875rem; background: rgba(7, 7, 7, 0.88); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+  .brand { font-size: 1.35rem; }
+  .topbar nav { gap: 0; }
+  .topbar nav a { padding: 0 0.5rem; letter-spacing: 0.08em; font-size: 0.7rem; }
+  .topbar nav a::after { left: 0.5rem; right: 0.5rem; }
+  .account { margin-left: 0.25rem; }
+  .avatar { width: 34px; height: 34px; }
+  .wow { padding: 0 1.25rem 9rem; }
+  .scroll-cue { font-size: 0.8rem; bottom: 1.25rem; }
+  .scroll-cue span { height: 2rem; }
+  .line-block { padding: 4rem 1.25rem; }
+  .cta { justify-content: center; }
+}

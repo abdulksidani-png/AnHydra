@@ -5,3 +5,4 @@ dist/
 .tanstack/
 .DS_Store
 public/examples.json
+public/backdrop/
