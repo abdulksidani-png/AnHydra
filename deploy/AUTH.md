@@ -50,7 +50,31 @@ including denial cases, audience, claim issuance, and `/me` then `/score`. Unit 
 with generated signing keys do not establish provider integration. Frontend login
 flow changes are owned by `docs/AUTH_FRONTEND_INSTRUCTIONS.md`.
 
-## Database migrations and privileges
+## AnHydra's tenant: the Actions in `deploy/auth0/`
+
+Tenant `dev-xdwed6kc3bbzxow1.us.auth0.com`, API identifier `https://anhydra.work/api`.
+
+- `post-login.js` (Login / Post Login) issues `token_kind=user_access` and `admission` on
+  access tokens for that API only, never in ID tokens. `google` is any login through the
+  `google-oauth2` connection. `verified_edu` is an email + password login whose address ends
+  in `.edu`, is verified, **and** is on the administrator-controlled approved list in the
+  Action secret `ALLOWED_EDU_EMAILS` (comma-separated). That list is the institutional
+  membership evidence this policy requires; everything else is refused at login.
+- `pre-user-registration.js` (Sign Up / Pre User Registration) refuses email sign-ups not on
+  the same list, so nobody creates an account that can never log in.
+- `node --test deploy/auth0/actions.test.cjs` runs both against simulated events.
+
+Server `.env` for this tenant:
+
+```sh
+AUTH0_ISSUER=https://dev-xdwed6kc3bbzxow1.us.auth0.com/
+AUTH0_AUDIENCE=https://anhydra.work/api
+AUTH0_CLAIM_NAMESPACE=https://anhydra.work/claims/
+```
+
+To admit another .edu user, add their address to `ALLOWED_EDU_EMAILS` in **both** Actions'
+secrets and deploy them. To remove someone, delete the address; their next login is refused.
+
 
 ### Quick path: PostgreSQL on the app server
 
