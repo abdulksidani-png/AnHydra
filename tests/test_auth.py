@@ -108,8 +108,9 @@ def test_token_supplied_key_url_is_ignored(api, key):
     get.assert_called_once_with(ISSUER + ".well-known/jwks.json")
 
 
-def test_verified_institution_admission(api, key):
-    assert api.get("/me", headers={"Authorization": "Bearer " + token(key, **{NS + "admission": "verified_edu"})}).status_code == 200
+@pytest.mark.parametrize("admission", ["verified_edu", "verified_email"])
+def test_verified_admissions(api, key, admission):
+    assert api.get("/me", headers={"Authorization": "Bearer " + token(key, **{NS + "admission": admission})}).status_code == 200
 
 
 def test_duplicate_authorization(api, key):
@@ -117,7 +118,7 @@ def test_duplicate_authorization(api, key):
     assert api.get("/me", headers=headers).status_code == 401
 
 
-@pytest.mark.parametrize("admission", [None, False, "microsoft", "edu", "admin"])
+@pytest.mark.parametrize("admission", [None, False, "microsoft", "edu", "admin", "email"])
 def test_admission_before_inference(api, key, admission):
     with patch("app.main.predict") as predict:
         response = api.post("/score", json={"sequence": "A" * 40},

@@ -25,7 +25,11 @@ Post Login Action must set **access-token-only** claims:
 | Claim | Allowed value and source |
 | --- | --- |
 | `https://anhydra.work/claims/token_kind` | `user_access`, only in a successful end-user login flow; never in ID tokens or client-credentials hooks |
-| `https://anhydra.work/claims/admission` | `google` for an administrator-allowlisted Google connection validated by Auth0, or `verified_edu` for verified `.edu` contact **and independently confirmed institutional membership** |
+| `https://anhydra.work/claims/admission` | `google` for an administrator-allowlisted Google connection validated by Auth0, `verified_email` for an Auth0 email/password account whose address Auth0 has verified, or `verified_edu` for verified `.edu` contact **and independently confirmed institutional membership** |
+
+`deploy/auth0-post-login.js` is the Action that issues `token_kind`, `google` and `verified_email`.
+An email/password account gets no admission claim until its address is verified, so it receives
+403 until then; the site tells the person to verify and sign in again.
 
 Derive eligibility from trusted connection configuration and authoritative institution
 assertions or an administrator-controlled membership registry. Do not derive it from
