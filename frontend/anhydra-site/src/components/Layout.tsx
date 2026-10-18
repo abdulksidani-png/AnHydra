@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
+import { AccountMenu } from "@/components/AccountMenu";
 import "@/anhydra.css";
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -19,6 +20,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <Link to="/about" activeProps={{ "aria-current": "page" }}>
             About
           </Link>
+          <AccountMenu />
         </nav>
       </header>
       {children}

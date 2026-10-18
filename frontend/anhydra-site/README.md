@@ -10,12 +10,29 @@ npm test
 npm run dev          # http://localhost:5173
 ```
 
-`npm run dev` proxies `/score`, `/health`, `/me` and `/ready` to `http://127.0.0.1:8000`. Set
+Copy `.env.example` to `.env.local` and choose a sign-in mode (below) first. `npm run dev` proxies `/score`, `/health`, `/me` and `/ready` to `http://127.0.0.1:8000`. Set
 `VITE_PROXY_TARGET` in `.env.local` to use another backend. Start the backend from the repository root:
 
 ```
 python -m uvicorn app.main:app --env-file .env --host 127.0.0.1 --port 8000
 ```
+
+## Sign-in
+
+The site is built in one of two modes, set in `.env.local` (development) or `.env.production.local`
+(the server's build); see `.env.example`:
+
+- **Auth0**: `VITE_AUTH0_DOMAIN`, `VITE_AUTH0_CLIENT_ID` and `VITE_AUTH0_AUDIENCE`. Anyone can
+  browse; pressing Screen signed out goes to Auth0's sign-in page (Google or email and password)
+  and comes back to /screen with the pasted sequence restored. Screening waits until `GET /me`
+  confirms the account, and 401, 403 and 503 each get their own message. The top bar shows the
+  Google photo, or the first letter of the name, with a Log in / Log out menu.
+- **Public**: `VITE_PUBLIC_ACCESS=true` and no Auth0 settings, for a backend run with
+  `PUBLIC_ACCESS=true`. No sign-in anywhere.
+
+`npm run build` refuses anything in between. Tokens stay in the Auth0 SDK's memory, never in
+browser storage. The code is in `src/auth/`; the tenant and server steps are in
+[deploy/README.md](../../deploy/README.md).
 
 ## Layout
 
@@ -24,6 +41,7 @@ src/
 ├── routes/          one file per page (/, /screen, /about); __root.tsx wraps them in the top bar
 ├── components/      Landing, Result (dial, residue map, drivers), Evidence (neighbour map, AlphaFold
 │                    backbone), Ensemble, Orbit (shared 3D canvas controls), Tour, Layout
+├── auth/            Auth0 settings, token handling, /me, and the session every page reads
 ├── lib/protein.ts   API client, residue classes, motif scan, feature labels, AlphaFold loader
 ├── config/settings.json   per-page titles and descriptions
 ├── data/team.ts     team members and the "built with" list

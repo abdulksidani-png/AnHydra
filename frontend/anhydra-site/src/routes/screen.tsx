@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import settings from "@/config/settings.json";
+import { useSession } from "@/auth/session";
 import { Tour, useTour } from "@/components/Tour";
 import { Answer, Drivers, ResidueMap, FeatureBars, Skeleton, Specimen, useReducedMotion } from "@/components/Result";
 import { Ensemble } from "@/components/Ensemble";
@@ -23,6 +24,10 @@ export const Route = createFileRoute("/screen")({
 
 type Fail = { status: number; message: string };
 
+// A signed-out visitor's sequence is kept here across the trip to the sign-in page and back. It is
+// only the pasted sequence, never a token, and it is removed as soon as it is put back in the box.
+const DRAFT_KEY = "anhydra-draft";
+
 function ScreenPage() {
   const reduced = useReducedMotion();
   const tour = useTour();
@@ -39,6 +44,53 @@ function ScreenPage() {
   const area = useRef<HTMLTextAreaElement | null>(null);
   const resultRef = useRef<HTMLDivElement | null>(null);
   const abort = useRef<AbortController | null>(null);
+  const session = useSession();
+  const signedOut = session.mode === "auth0" && !session.checking && !session.viewer;
+  const accountId = session.mode === "auth0" && session.account.status === "ready" ? session.account.profile.id : null;
+  const accountLoading = session.mode === "auth0" && (session.checking || session.account.status === "loading");
+
+  useEffect(() => {
+    try {
+      const draft = window.sessionStorage.getItem(DRAFT_KEY);
+      if (draft) {
+        setText(draft);
+        window.sessionStorage.removeItem(DRAFT_KEY);
+      }
+    } catch {
+      return;
+    }
+  }, []);
+
+  // A different account, or none, never sees the previous person's result.
+  useEffect(() => {
+    setResult(null);
+    setFail(null);
+  }, [accountId]);
+
+  const signInHere = () => {
+    if (session.mode !== "auth0") return;
+    try {
+      window.sessionStorage.setItem(DRAFT_KEY, text);
+    } catch {
+      // Without storage the box comes back empty; signing in still works.
+    }
+    session.signIn("/screen");
+  };
+
+  // What stops screening before a request is even sent: missing settings, or an account the server
+  // has refused, cannot find, or cannot reach.
+  let gate: Fail | null = null;
+  if (session.mode === "misconfigured") {
+    gate = { status: -1, message: `This build is missing its sign-in settings (${session.missing.join(", ")}), so screening is off.` };
+  } else if (session.mode === "auth0" && session.viewer && session.account.status === "error") {
+    const { kind, message } = session.account;
+    gate = {
+      status: kind === "denied" ? 403 : kind === "expired" ? 401 : 503,
+      message: kind === "denied" && session.viewer.emailUnverified
+        ? "Verify your email address with the link Auth0 sent you, then log out and log in again."
+        : message,
+    };
+  }
 
   useEffect(() => {
     let live = true;
@@ -66,7 +118,11 @@ function ScreenPage() {
   const cleaned = useMemo(() => cleanSequence(text), [text]);
 
   const submit = async () => {
-    if (busy) return;
+    if (busy || gate || accountLoading) return;
+    if (signedOut) {
+      signInHere();
+      return;
+    }
     const seq = cleaned;
     if (!seq) {
       setFail({ status: 400, message: "Paste an amino-acid sequence first." });
@@ -103,6 +159,7 @@ function ScreenPage() {
         : "Sending the sequence…";
 
   const invalid = fail?.status === 400;
+  const shown = fail ?? gate;
   const features = result?.top_features ?? [];
   const neighbours = result?.neighbours?.filter((n) => n && typeof n.accession === "string" && Number.isFinite(n.cosine)) ?? [];
 
@@ -149,10 +206,10 @@ function ScreenPage() {
             />
             <div className="form-row">
               <p id="seq-count" className="mono count">
-                {cleaned.length} residues <span className="muted">· 20 to 1022 accepted</span>
+                {cleaned.length} residues <span className="muted">· 20 to 1022 accepted{signedOut ? " · you'll be asked to log in" : ""}</span>
               </p>
-              <button type="submit" className="screen-btn" disabled={busy}>
-                {busy ? "Screening…" : "Screen"}
+              <button type="submit" className="screen-btn" disabled={busy || accountLoading || gate?.status === -1}>
+                {busy ? "Screening…" : accountLoading ? "Signing you in…" : "Screen"}
               </button>
             </div>
             <div className="chips" role="group" aria-label="Example sequences">
@@ -176,15 +233,27 @@ function ScreenPage() {
               ))}
             </div>
             <div id="seq-error" className="error-slot" aria-live="assertive">
-              {fail ? (
-                <div className={`error-box err-${fail.status}`}>
-                  {fail.status === 401 ? <p className="err-title">Sign in required</p> : null}
-                  {fail.status === 503 ? <p className="err-title">The model is not available</p> : null}
-                  {fail.status === 0 ? <p className="err-title">Network problem</p> : null}
-                  <p>{fail.message}</p>
-                  {fail.status === 0 || fail.status >= 500 ? (
-                    <button type="button" className="ghost-btn" onClick={submit}>
+              {shown ? (
+                <div className={`error-box err-${shown.status}`}>
+                  {shown.status === -1 ? <p className="err-title">Sign-in is not configured</p> : null}
+                  {shown.status === 401 ? <p className="err-title">Log in required</p> : null}
+                  {shown.status === 403 ? <p className="err-title">Access denied</p> : null}
+                  {shown.status === 503 ? <p className="err-title">{shown === gate ? "Your account could not be loaded" : "The model is not available"}</p> : null}
+                  {shown.status === 0 ? <p className="err-title">Network problem</p> : null}
+                  <p>{shown.message}</p>
+                  {shown.status === 0 || shown.status >= 500 ? (
+                    <button type="button" className="ghost-btn" onClick={shown === gate && session.mode === "auth0" ? session.retry : submit}>
                       Try again
+                    </button>
+                  ) : null}
+                  {shown.status === 401 ? (
+                    <button type="button" className="ghost-btn" onClick={signInHere}>
+                      Log in
+                    </button>
+                  ) : null}
+                  {(shown.status === 403 || (shown === gate && shown.status === 503)) && session.mode === "auth0" ? (
+                    <button type="button" className="ghost-btn" onClick={session.signOut}>
+                      Log out
                     </button>
                   ) : null}
                 </div>

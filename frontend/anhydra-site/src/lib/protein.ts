@@ -1,3 +1,5 @@
+import { TokenError, authorizationHeaders } from "../auth/token.ts";
+
 export type Neighbour = { accession: string; cosine: number; family?: string | null };
 
 export type ScoreResult = {
@@ -208,11 +210,18 @@ function detailText(body: unknown): string | null {
 }
 
 export async function requestScore(sequence: string, signal?: AbortSignal): Promise<ScoreResult> {
+  let auth: Record<string, string>;
+  try {
+    auth = await authorizationHeaders();
+  } catch (e) {
+    if (e instanceof TokenError && e.reason !== "expired") throw new ScoreError(0, "Still signing you in. Try again in a moment.");
+    throw new ScoreError(401, "Your session has expired. Log in again to screen sequences.");
+  }
   let res: Response;
   try {
     res = await fetch(`${API_BASE}/score`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...auth },
       body: JSON.stringify({ sequence }),
       signal,
     });
@@ -228,7 +237,7 @@ export async function requestScore(sequence: string, signal?: AbortSignal): Prom
   }
   if (!res.ok) {
     const detail = detailText(body);
-    if (res.status === 401) throw new ScoreError(401, detail ?? "Sign in to screen sequences.");
+    if (res.status === 401) throw new ScoreError(401, detail ?? "Log in to screen sequences.");
     throw new ScoreError(res.status, detail ?? `The server answered with status ${res.status}.`);
   }
   const r = body as ScoreResult | null;

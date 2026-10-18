@@ -544,3 +544,14 @@ body { background: transparent; }
 ::view-transition-old(root), ::view-transition-new(root) { mix-blend-mode: normal; background: #070707; }
 @keyframes vt-out { to { opacity: 0; transform: scale(1.04) } }
 @keyframes vt-in { from { clip-path: inset(100% 0 0 0); opacity: 0.4 } to { clip-path: inset(0 0 0 0); opacity: 1 } }
+
+/* account menu */
+.topbar nav { align-items: center; }
+.account { position: relative; margin-left: 0.5rem; }
+.avatar { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; overflow: hidden; padding: 0; cursor: pointer; background: #1a1b1c; color: var(--foam); border: 1px solid #3a3b3d; font-family: var(--font-display); font-size: 1.1rem; }
+.avatar:hover, .avatar[aria-expanded="true"] { border-color: var(--foam); }
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+.account-menu { position: absolute; right: 0; top: 100%; min-width: 11rem; padding: 0.6rem 0.75rem 0.75rem; background: #121213; border: 1px solid #2c2d2f; border-radius: 2px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5); }
+.account-menu .ghost-btn { width: 100%; margin: 0; }
+.account-name { margin: 0 0 0.5rem; font-size: 0.85rem; color: var(--silt); overflow-wrap: anywhere; }
+.error-box .ghost-btn + .ghost-btn { margin-left: 0.5rem; }

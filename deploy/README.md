@@ -59,6 +59,41 @@ that quota. On the server, from the checkout:
 To go back, restore the Caddyfile backup and reload Caddy. Removing `PUBLIC_ACCESS`
 puts sign-in back on, which needs the Auth0 and database settings in AUTH.md.
 
+## Turning sign-in on for the site
+
+People sign in with Google or with an email and password (verified before they can screen).
+Browsing stays open; pressing Screen asks a signed-out visitor to sign in.
+
+In the Auth0 dashboard:
+
+1. **APIs**: an API whose identifier is the audience (for example `https://api.anhydra.work`),
+   signing algorithm RS256.
+2. **Applications**: a Single Page Application. Set Allowed Callback URLs, Allowed Logout URLs
+   and Allowed Web Origins each to `https://anhydra.work, https://www.anhydra.work,
+   http://localhost:5173`.
+3. **Authentication**: enable the `google-oauth2` and `Username-Password-Authentication`
+   connections for that application. Give Google your own OAuth client ID and secret; Auth0's
+   development keys are only for testing.
+4. **Actions**: create a Login / Post Login Action from `deploy/auth0-post-login.js`, deploy it,
+   and add it to the Login flow.
+
+On the server, from the checkout, deploy the site first (it works with either backend mode), then
+switch the backend:
+
+1. Put the three public settings in `frontend/anhydra-site/.env.production.local`:
+   `VITE_AUTH0_DOMAIN`, `VITE_AUTH0_CLIENT_ID`, `VITE_AUTH0_AUDIENCE`. Rebuild and copy the site
+   as in step 3 above.
+2. `sudo bash deploy/setup_postgres.sh /root/tardiscreen` creates the account database and writes
+   `DATABASE_URL` into `.env`.
+3. In `.env` set `AUTH0_ISSUER=https://<VITE_AUTH0_DOMAIN>/`, `AUTH0_AUDIENCE` (the same audience),
+   `AUTH0_CLAIM_NAMESPACE=https://anhydra.work/claims/` and `PUBLIC_ACCESS=false`, then
+   `systemctl restart tardiscreen`.
+4. Sign in on the site with Google and with a new email account, and screen a sequence with each.
+   `scripts/check_site.sh` now needs `AUTH_HEADER_FILE` (see AUTH.md) to test scoring.
+
+To go back to open access, set `PUBLIC_ACCESS=true` again, restart, and rebuild the site with
+`VITE_PUBLIC_ACCESS=true` in place of the three Auth0 settings.
+
 ## Verified deployment, October 17, 2026
 
 - Host: `64.177.42.245`, checkout `/root/tardiscreen`, revision `26c3a12`.
