@@ -48,35 +48,35 @@ function GithubAvatar({ member }: { member: Member }) {
   const user = member.github ? new URL(member.github).pathname.split("/")[1] : "";
   if (!user || failed) return null;
   return (
-    <a href={member.github} target="_blank" rel="noopener noreferrer" className="member-avatar" title={`${member.name} on GitHub`}>
-      <img
-        src={`https://github.com/${encodeURIComponent(user)}.png?size=160`}
-        alt={`${member.name}'s GitHub profile picture`}
-        width={72}
-        height={72}
-        loading="lazy"
-        onError={() => setFailed(true)}
-      />
-    </a>
+    <div className="member-avatar-slot">
+      <a href={member.github} target="_blank" rel="noopener noreferrer" className="member-avatar" title={`${member.name} on GitHub`}>
+        <img
+          src={`https://github.com/${encodeURIComponent(user)}.png?size=200`}
+          alt={`${member.name}'s GitHub profile picture`}
+          width={100}
+          height={100}
+          loading="lazy"
+          onError={() => setFailed(true)}
+        />
+      </a>
+    </div>
   );
 }
 
 function MemberCard({ member }: { member: Member }) {
   return (
-    <li className="card grid grid-cols-[auto_1fr] items-center gap-4">
-      <div className="flex min-w-0 flex-col gap-4">
-        <h3>{member.name}</h3>
-        <div className="flex flex-wrap gap-2">
-          <Widget href={member.github} label={`${member.name} on GitHub`}>
-            <GithubMark />
-          </Widget>
-          <Widget href={member.linkedin} label={`${member.name} on LinkedIn`}>
-            <LinkedinMark />
-          </Widget>
-          <Widget href={member.website} label={`${member.name}'s website`}>
-            <Globe size={20} aria-hidden="true" />
-          </Widget>
-        </div>
+    <li className="card relative flex flex-col gap-4">
+      <h3>{member.name}</h3>
+      <div className="flex flex-wrap gap-2">
+        <Widget href={member.github} label={`${member.name} on GitHub`}>
+          <GithubMark />
+        </Widget>
+        <Widget href={member.linkedin} label={`${member.name} on LinkedIn`}>
+          <LinkedinMark />
+        </Widget>
+        <Widget href={member.website} label={`${member.name}'s website`}>
+          <Globe size={20} aria-hidden="true" />
+        </Widget>
       </div>
       <GithubAvatar member={member} />
     </li>
